@@ -1,10 +1,11 @@
-"""Digital-twin simulator (Plan §7). Implemented in Phase 1.
+"""Digital-twin simulator (Plan §7).
 
-Contract (fixed now so Phase 2/3 can code against it):
+    sim = Simulator(instance, config)
+    result = sim.run(decisions, clock=t, sample=None)   # -> SimResult with per-leg outcomes + Metrics
 
-    apply(state: State, action: Action, config: EngineConfig) -> tuple[State, Metrics]
-
-* re-propagates only the tails, crews and itineraries touched by the action (§7.6)
-* never mutates its input (State is a snapshot)
-* returns the Metrics namespace consumed by aeronexus_core.scoring
+Re-propagates the whole day (fast enough: ~ms for a medium network); never mutates its inputs.
 """
+from .engine import ItineraryOutcome, LegOutcome, ScenarioSample, SimResult, Simulator
+from .scenarios import sample_scenarios
+
+__all__ = ["ItineraryOutcome", "LegOutcome", "ScenarioSample", "SimResult", "Simulator", "sample_scenarios"]
