@@ -213,7 +213,16 @@ class Instance(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     # ---- lookups ----------------------------------------------------------------
-    # Instances are treated as immutable once built; lookups are cached on first use.
+    # Instances are treated as immutable once built; lookups are cached on first use and the caches
+    # are dropped whenever a modified copy is made (model_copy), so a copy never answers with stale data.
+
+    _CACHED_LOOKUPS = ("airports_by_code", "flights_by_id", "aircraft_by_tail", "types_by_code", "crews_by_id", "hubs")
+
+    def model_copy(self, *, update: dict[str, Any] | None = None, deep: bool = False) -> Instance:
+        copied = super().model_copy(update=update, deep=deep)
+        for key in self._CACHED_LOOKUPS:
+            copied.__dict__.pop(key, None)
+        return copied
 
     @cached_property
     def airports_by_code(self) -> dict[str, Airport]:
@@ -360,8 +369,61 @@ class Run(BaseModel):
     narrative: str | None = None  # LLM narration; never part of the decision record (§14.1)
 
 
+class Decisions(BaseModel):
+    """The plan-so-far as an overlay on the immutable instance (Plan §7). Applying an action extends this;
+    the simulator derives the effective schedule from instance + decisions + disruptions."""
+
+    cancelled: list[str] = Field(default_factory=list)          # flight ids cancelled by decision
+    delays: dict[str, int] = Field(default_factory=dict)        # flight id -> imposed delay minutes
+    tail_override: dict[str, str] = Field(default_factory=dict)  # flight id -> tail (after swaps)
+    crew_override: dict[str, str] = Field(default_factory=dict)  # flight id -> crew id (standby call-outs)
+    wait_until: int | None = None                                # WAIT action (faculty track)
+
+    def key(self) -> str:
+        parts = [
+            "C:" + ",".join(sorted(self.cancelled)),
+            "D:" + ",".join(f"{k}={v}" for k, v in sorted(self.delays.items())),
+            "T:" + ",".join(f"{k}={v}" for k, v in sorted(self.tail_override.items())),
+            "W:" + ",".join(f"{k}={v}" for k, v in sorted(self.crew_override.items())),
+        ]
+        return "|".join(parts)
+
+    def extended(self, action: Action, instance: Instance | None = None) -> Decisions:
+        """Return a copy with ``action`` applied. SWAP needs the instance to rewrite both rotations."""
+        d = self.model_copy(deep=True)
+        if action.type in ("CANCEL_LEG", "CANCEL_CYCLE"):
+            for fid in action.target_flights:
+                if fid not in d.cancelled:
+                    d.cancelled.append(fid)
+        elif action.type == "DELAY":
+            for fid in action.target_flights:
+                d.delays[fid] = max(d.delays.get(fid, 0), int(action.params.get("delay_min", 0)))
+        elif action.type == "SWAP":
+            if instance is None:
+                raise ValueError("SWAP needs the instance")
+            fid = action.target_flights[0]
+            f = instance.flight(fid)
+            new_tail = str(action.params["swap_tail"])
+            old_tail = d.tail_override.get(fid, f.tail)
+            assert old_tail is not None
+            # legs of old_tail from f onwards -> new_tail; legs of new_tail from f.std onwards -> old_tail
+            for g in instance.flights:
+                eff = d.tail_override.get(g.id, g.tail)
+                if eff == old_tail and g.std >= f.std:
+                    d.tail_override[g.id] = new_tail
+                elif eff == new_tail and g.std >= f.std:
+                    d.tail_override[g.id] = old_tail
+        elif action.type == "WAIT":
+            d.wait_until = int(action.params.get("wait_until", 0))
+        return d
+
+
 class State(BaseModel):
-    """Operational snapshot at ``clock``. Phase 1 adds propagation caches; for now it wraps the instance."""
+    """Operational snapshot at ``clock``: the immutable instance plus the decisions taken so far."""
 
     clock: int = Field(ge=0)
     instance: Instance
+    decisions: Decisions = Field(default_factory=Decisions)
+
+    def apply(self, action: Action) -> State:
+        return State(clock=self.clock, instance=self.instance, decisions=self.decisions.extended(action, self.instance))
