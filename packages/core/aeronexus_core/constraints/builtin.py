@@ -1,13 +1,12 @@
 """Builtin constraint plugins H1–H10 (Plan §8).
 
-Static rules are fully implemented here. Simulation-dependent rules (continuity, turnaround, FDTL,
-slots, stands, swap feasibility) are registered with their configuration and phase so the catalogue is
-complete and editable from the UI now; their ``check`` is completed in Phase 2 together with the
-simulator (they currently return None, i.e. never exclude - documented in tests as ``xfail``).
+Static rules decide from the snapshot alone. Simulation-dependent rules (continuity, turnaround, FDTL,
+slots, stands, swap feasibility) decide from the propagated consequences through ``check_simulated``
+(see the second half of this module).
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from ..expressions import Namespace, evaluate
 from ..model import Action, Flight, State, TimeWindow
@@ -201,60 +200,111 @@ def _flight_namespace(f: Flight) -> Namespace:
 
 
 # ---------------------------------------------------------------- simulation-dependent rules (Phase 2)
+#
+# These rules can only be decided after propagation. The simulator already refuses to operate a leg that
+# breaks them (forced cancellation with a reason); a constraint here asks whether a flight the action
+# *targets* - i.e. the flight the plan is trying to operate by delaying or swapping - was refused for its
+# reason. That makes a self-defeating action (delay into an FDP breach, swap onto an aircraft that is not
+# there) infeasible with the right constraint id attached, instead of silently scoring as a cancellation.
 
 
-class _SimulatedStub(Constraint):
+class _SimulatedRule(Constraint):
     phase = "simulated"
+    patterns: ClassVar[tuple[str, ...]] = ()
+    applies_to: ClassVar[frozenset[str]] = frozenset({"DELAY", "SWAP"})
 
-    def check(self, state: State, action: Action) -> Violation | None:  # pragma: no cover - Phase 2
+    def check(self, state: State, action: Action) -> Violation | None:
+        return None
+
+    def check_simulated(self, state: State, action: Action, result: Any) -> Violation | None:
+        if action.type not in self.applies_to:
+            return None
+        legs = getattr(result, "legs", {})
+        for fid in action.target_flights:
+            o = legs.get(fid)
+            if o is None or o.operated or not o.reason:
+                continue
+            if any(p in o.reason for p in self.patterns):
+                return self.violation(f"{action.type} on {fid} is self-defeating: {o.reason}", flight=fid)
         return None
 
 
 @register
-class AircraftContinuity(_SimulatedStub):
+class AircraftContinuity(_SimulatedRule):
     plugin_id = "aircraft_continuity"
+    patterns = ("upstream cancellation", "no aircraft assigned", "is at ")
 
 
 @register
-class MinTurnaround(_SimulatedStub):
+class MinTurnaround(_SimulatedRule):
     plugin_id = "min_turnaround"
+    patterns = ("could not depart",)
 
 
 @register
-class CrewFDTL(_SimulatedStub):
+class CrewFDTL(_SimulatedRule):
     plugin_id = "crew_fdtl"
+    patterns = ("exceed FDP",)
 
 
 @register
-class CrewRest(_SimulatedStub):
+class CrewRest(_SimulatedRule):
     plugin_id = "crew_rest"
+    patterns = ("rest",)
 
 
 @register
-class CrewLocation(_SimulatedStub):
+class CrewLocation(_SimulatedRule):
     plugin_id = "crew_location"
+    patterns = ("crew ", " not rated", "unavailable", "no crew assigned")
 
 
 @register
-class AirportSlotCap(_SimulatedStub):
+class AirportSlotCap(_SimulatedRule):
     plugin_id = "airport_slot_cap"
+    patterns = ("capacity/closure",)
 
 
 @register
-class AirportStandCap(_SimulatedStub):
+class AirportStandCap(_SimulatedRule):
     plugin_id = "airport_stand_cap"
+    patterns = ("stand",)
 
 
 @register
-class AircraftMaintenanceDue(_SimulatedStub):
+class AircraftMaintenanceDue(_SimulatedRule):
     plugin_id = "aircraft_maintenance_due"
+    patterns = ("maintenance",)
 
 
 @register
-class SwapFeasibility(_SimulatedStub):
+class SwapFeasibility(_SimulatedRule):
     plugin_id = "swap_feasibility"
+    applies_to = frozenset({"SWAP"})
+    patterns = ("is at ", "AOG", "low-visibility", "not rated")
+
+    def check(self, state: State, action: Action) -> Violation | None:
+        if action.type != "SWAP":
+            return None
+        inst = state.instance
+        tail = action.params.get("swap_tail")
+        ac = inst.aircraft_by_tail.get(str(tail))
+        if ac is None:
+            return self.violation(f"unknown aircraft {tail}")
+        if ac.status == "AOG":
+            return self.violation(f"aircraft {tail} is AOG")
+        f = inst.flight(action.target_flights[0])
+        if ac.type_code != f.aircraft_type:
+            typ = inst.aircraft_type(ac.type_code)
+            if not self.config.get("allow_seat_downgrade", False) and typ.seats < f.booked_pax:
+                return self.violation(f"aircraft {tail} ({typ.seats} seats) cannot carry {f.booked_pax} booked passengers")
+            crew = inst.crews_by_id.get(f.crew_id or "")
+            if crew and ac.type_code not in crew.type_ratings:
+                return self.violation(f"crew {crew.id} is not rated on {ac.type_code}")
+        return None
 
 
 @register
-class PassengerMCT(_SimulatedStub):
+class PassengerMCT(_SimulatedRule):
     plugin_id = "passenger_mct"
+    applies_to = frozenset()  # evaluated inside the simulator as misconnects; never excludes an action

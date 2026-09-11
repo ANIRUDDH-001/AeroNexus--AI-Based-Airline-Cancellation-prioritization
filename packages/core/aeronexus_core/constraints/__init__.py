@@ -15,6 +15,7 @@ __all__ = [
     "available_plugins",
     "build_constraints",
     "check_all",
+    "check_all_simulated",
     "feasibility_filter",
     "register",
 ]

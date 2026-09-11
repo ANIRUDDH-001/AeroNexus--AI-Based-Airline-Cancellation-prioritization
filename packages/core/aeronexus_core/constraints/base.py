@@ -43,6 +43,12 @@ class Constraint(ABC):
     @abstractmethod
     def check(self, state: State, action: Action) -> Violation | None: ...
 
+    def check_simulated(self, state: State, action: Action, result: Any) -> Violation | None:
+        """Phase 2 hook: inspect the simulated consequences of ``action`` (a ``SimResult``). A rule that
+        needs propagation to decide (continuity, turnaround, FDTL, slots, swap) implements this and
+        typically asks: did a flight the action *targets* end up forced-cancelled for my reason?"""
+        return None
+
     def violation(self, reason: str, **details: Any) -> Violation:
         return Violation(self.id, reason, details)
 
@@ -99,6 +105,15 @@ def check_all(
             found.append(v)
             if stop_at_first:
                 break
+    return found
+
+
+def check_all_simulated(constraints: Iterable[Constraint], state: State, action: Action, result: Any) -> list[Violation]:
+    found: list[Violation] = []
+    for c in constraints:
+        v = c.check_simulated(state, action, result)
+        if v is not None:
+            found.append(v)
     return found
 
 
