@@ -377,6 +377,7 @@ class Decisions(BaseModel):
     delays: dict[str, int] = Field(default_factory=dict)        # flight id -> imposed delay minutes
     tail_override: dict[str, str] = Field(default_factory=dict)  # flight id -> tail (after swaps)
     crew_override: dict[str, str] = Field(default_factory=dict)  # flight id -> crew id (standby call-outs)
+    swaps: list[str] = Field(default_factory=list)               # flight ids at which a SWAP was applied
     wait_until: int | None = None                                # WAIT action (faculty track)
 
     def key(self) -> str:
@@ -385,6 +386,7 @@ class Decisions(BaseModel):
             "D:" + ",".join(f"{k}={v}" for k, v in sorted(self.delays.items())),
             "T:" + ",".join(f"{k}={v}" for k, v in sorted(self.tail_override.items())),
             "W:" + ",".join(f"{k}={v}" for k, v in sorted(self.crew_override.items())),
+            "S:" + ",".join(self.swaps),
         ]
         return "|".join(parts)
 
@@ -404,6 +406,7 @@ class Decisions(BaseModel):
             fid = action.target_flights[0]
             f = instance.flight(fid)
             new_tail = str(action.params["swap_tail"])
+            d.swaps.append(fid)
             old_tail = d.tail_override.get(fid, f.tail)
             assert old_tail is not None
             # legs of old_tail from f onwards -> new_tail; legs of new_tail from f.std onwards -> old_tail
