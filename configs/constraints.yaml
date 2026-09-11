@@ -1,0 +1,111 @@
+# Hard-constraint catalogue (Plan §8). Each entry is a registered plugin (kind: builtin) or a user rule
+# (kind: expression). A violation removes the option with a reason - never a penalty (principle P2).
+# FDTL values are PLACEHOLDERS - VERIFY against DGCA CAR Section 7 Series J Part III (current revision).
+constraints:
+  - id: H1
+    name: Aircraft continuity
+    plugin: aircraft_continuity
+    description: A leg operates only if its tail is at the origin and ready by departure; cancelling a leg leaves the aircraft at that leg's origin.
+  - id: H2
+    name: Minimum turnaround
+    plugin: min_turnaround
+    config:
+      buffer_min: 0
+    description: dep >= previous arrival + min turnaround (per type, hub/spoke).
+  - id: H3a
+    name: Crew FDP and flight-time limits
+    plugin: crew_fdtl
+    config:
+      report_before_std_min: 60
+      # Max FDP (minutes) by report-time band and number of sectors. VERIFY.
+      fdp_table:
+        - band: [360, 779]      # 06:00-12:59 report
+          by_sectors: {1: 780, 2: 780, 3: 750, 4: 720, 5: 690, 6: 660}
+        - band: [780, 1079]     # 13:00-17:59
+          by_sectors: {1: 750, 2: 750, 3: 720, 4: 690, 5: 660, 6: 630}
+        - band: [1080, 1439]    # 18:00-23:59
+          by_sectors: {1: 660, 2: 660, 3: 630, 4: 600, 5: 570, 6: 540}
+        - band: [0, 359]        # 00:00-05:59
+          by_sectors: {1: 600, 2: 600, 3: 570, 4: 540, 5: 510, 6: 480}
+      max_flight_time_day_min: 480        # VERIFY
+      max_flight_time_week_min: 1800      # VERIFY
+      max_sectors_per_fdp: 6
+    description: Crew duty must stay inside the FDP limit for the report time and sector count.
+  - id: H3b
+    name: Crew rest
+    plugin: crew_rest
+    config:
+      min_rest_min: 720              # VERIFY
+      weekly_rest_min: 2880          # 48 h under the revised norms - VERIFY
+    description: dep >= rest_until; weekly rest respected.
+  - id: H3c
+    name: Crew location
+    plugin: crew_location
+    config:
+      standby_callout_lead_min: 90
+    description: Crew must be at the origin station, or a standby at that station can be called out in time.
+  - id: H3d
+    name: Crew qualification
+    plugin: crew_qualification
+    config:
+      lvp_requires: [CAT3]
+    description: Type rating required; CAT-III when low-visibility procedures are active.
+  - id: H4a
+    name: Airport curfew
+    plugin: airport_curfew
+    description: No departure/arrival inside a curfew window.
+  - id: H4b
+    name: Slot / movement cap
+    plugin: airport_slot_cap
+    description: Movements per hour <= capacity after disruption curves.
+  - id: H4c
+    name: Stand / gate cap
+    plugin: airport_stand_cap
+    description: Aircraft on ground at a station <= stand capacity (simple cap; decision D11).
+  - id: H4d
+    name: Airport closure
+    plugin: airport_closure
+    description: No movement during closure windows.
+  - id: H5a
+    name: Aircraft on ground (AOG)
+    plugin: aircraft_aog
+    description: A tail with status AOG cannot operate.
+  - id: H5b
+    name: MEL restrictions
+    plugin: aircraft_mel
+    description: A tail cannot operate under conditions listed in its MEL restrictions (e.g. NO_CAT3).
+  - id: H5c
+    name: Maintenance due
+    plugin: aircraft_maintenance_due
+    description: Tail must be at a maintenance base by maintenance_due_at.
+  - id: H6
+    name: Protected flights
+    plugin: protected_flight
+    config:
+      protected_reasons: [INTERNATIONAL_CONNECTION, CODESHARE, VIP, LAST_OF_DAY_NO_ALTERNATIVE]
+    description: Flights flagged protected are never cancellation candidates.
+  - id: H7
+    name: Delay bounds
+    plugin: delay_bounds
+    config:
+      max_delay_min: 180
+    description: DELAY actions above the bound are infeasible; delay pushing into curfew/FDP is caught by H4a/H3a.
+  - id: H8
+    name: Swap feasibility
+    plugin: swap_feasibility
+    config:
+      swap_window_min: 120
+      allow_seat_downgrade: false
+    description: Same type (or enough seats + rated crew), both tails at the station within the window, partner not AOG/MEL-blocked.
+  - id: H9
+    name: Passenger minimum connection time
+    plugin: passenger_mct
+    description: Evaluated in the simulator; drives misconnects rather than excluding actions.
+  - id: H10_example
+    name: User rule - never cancel a flight with more than 50 VIPs
+    kind: expression
+    enabled: false
+    config:
+      applies_to: [CANCEL_LEG, CANCEL_CYCLE]
+      forbid_if: "flight.attrs.get('vip_count', 0) > 50"
+    description: Example of a user-defined rule over an added attribute column (§15.2).

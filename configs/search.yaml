@@ -1,0 +1,18 @@
+# Search settings (Plan §11). Every value is editable from the UI; the latency budget adapts S -> D -> K.
+search:
+  K: 5                       # beam width
+  D: 3                       # beam depth (max actions per plan)
+  M: 12                      # candidates kept after surrogate pre-rank (Phase 5)
+  N: 8                       # plans re-evaluated under sampled scenarios
+  S: 10                      # sampled scenarios per plan
+  latency_budget_ms: 5000
+  hysteresis_pct: 5.0        # top recommendation only changes if improved by more than this
+  candidate_scope: at_risk_only        # or at_risk_plus_neighbours
+  ranking_mode: composite              # or priority (lexicographic with tolerances)
+  level_tolerances: {L1: 0.0, L2: 0.05, L3: 0.10, L4: 0.10}
+  delay_steps_min: [30, 60, 90, 120, 180]
+  max_delay_min: 180
+  horizon_hours: 8
+  at_risk_delay_threshold_min: 45
+  max_staleness_min: 30
+  top_n_returned: 3

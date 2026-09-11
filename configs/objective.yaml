@@ -1,0 +1,102 @@
+# Network Impact Score terms (Plan §10.2). Lower NIS is better.
+# Each term is a safe expression over the metrics namespace (packages/core/aeronexus_core/scoring/metrics.py)
+# plus helpers sum_affected('attr') / max_affected('attr') / count_affected(). Weights are PLACEHOLDERS to be
+# tuned on the hand-crafted cases (data/cases) — do not present them as calibrated.
+objective_terms:
+  # ---- L1 Network continuity
+  - name: forced_downstream_cancellations
+    level: L1
+    expression: forced_downstream_cancellations
+    weight: 5000
+    description: Flights that could no longer operate because of this plan (aircraft position, crew, curfew).
+  - name: propagated_delay
+    level: L1
+    expression: propagated_delay_min
+    weight: 8
+    description: Extra delay minutes pushed onto other flights.
+  - name: next_wave_shortfall
+    level: L1
+    expression: next_wave_shortfall
+    weight: 3000
+    description: Aircraft/crew missing for the next morning's first wave.
+
+  # ---- L2 Passenger harm
+  - name: pax_cancelled
+    level: L2
+    expression: pax_cancelled
+    weight: 40
+    description: Passengers booked on flights this plan cancels.
+  - name: pax_reprotect_delay
+    level: L2
+    expression: pax_reprotect_delay_hours
+    weight: 15
+    description: Passenger-hours until re-accommodated on later flights.
+  - name: pax_stranded_overnight
+    level: L2
+    expression: pax_stranded_overnight
+    weight: 400
+    description: Passengers with no same-day re-accommodation.
+  - name: misconnects
+    level: L2
+    expression: misconnects
+    weight: 60
+    description: Connecting passengers who miss an onward flight.
+  - name: special_assistance_affected
+    level: L2
+    expression: special_assistance_affected
+    weight: 200
+    description: Special-assistance passengers on affected flights (aggregate count, no PII).
+  - name: high_value_affected
+    level: L2
+    expression: high_value_affected
+    weight: 120
+    description: High-value passengers on affected flights (aggregate count).
+  - name: partner_pax_affected
+    level: L2
+    expression: partner_pax_affected
+    weight: 150
+    description: Codeshare / interline passengers affected (partner obligations).
+
+  # ---- L3 Cost (INR)
+  - name: compensation
+    level: L3
+    expression: compensation_inr
+    weight: 1
+    description: DGCA CAR Sec 3 Series M Part IV compensation (defaults in parameters.yaml — VERIFY current CAR).
+  - name: hotel_meal
+    level: L3
+    expression: pax_stranded_overnight * hotel_meal_rate_inr
+    weight: 1
+    description: Hotel and meal cost for stranded passengers.
+  - name: crew_standby_used
+    level: L3
+    expression: crew_standby_used
+    weight: 500
+    description: Standby crews called out.
+  - name: crew_out_of_position
+    level: L3
+    expression: crew_out_of_position
+    weight: 800
+    description: Crews left away from their next duty station.
+  - name: swap_cost
+    level: L3
+    expression: swaps
+    weight: 300
+    description: Aircraft swaps performed.
+  - name: revenue_loss
+    level: L3
+    expression: pax_cancelled * avg_fare_inr
+    weight: 0.5
+    description: Approximate revenue at risk on cancelled flights.
+
+  # ---- L4 Robustness
+  - name: buffer_consumed
+    level: L4
+    expression: buffer_consumed_min
+    weight: 2
+    description: Turnaround / FDP slack consumed by the plan.
+  - name: tail_risk
+    level: L4
+    expression: tail_risk_penalty
+    weight: 1
+    description: (P90 - mean) of L1+L2 across sampled scenarios.

@@ -1,0 +1,66 @@
+# Parameter registry (Plan §15.1). Global parameters are available by name inside objective expressions
+# and constraint rules. Entity-scoped parameters describe columns that may appear in `attributes`.
+# Values marked VERIFY are placeholders transcribed from public sources and must be checked against the
+# current DGCA revision before the pitch (Plan §24).
+parameters:
+  # ---- Cost inputs (global)
+  - name: hotel_meal_rate_inr
+    type: number
+    scope: global
+    default: 3500
+    unit: INR per stranded passenger
+    description: Hotel + meals for a passenger stranded overnight.
+    source: builtin
+  - name: avg_fare_inr
+    type: number
+    scope: global
+    default: 5500
+    unit: INR
+    description: Average one-way fare used for the approximate revenue-loss term.
+    source: builtin
+  - name: compensation_block_le_1h_inr
+    type: number
+    scope: global
+    default: 5000
+    unit: INR per passenger
+    description: VERIFY — DGCA CAR Sec 3 Series M Part IV cancellation compensation, block time <= 1 h.
+    source: builtin
+  - name: compensation_block_1_2h_inr
+    type: number
+    scope: global
+    default: 7500
+    unit: INR per passenger
+    description: VERIFY — block time 1–2 h.
+    source: builtin
+  - name: compensation_block_gt_2h_inr
+    type: number
+    scope: global
+    default: 10000
+    unit: INR per passenger
+    description: VERIFY — block time > 2 h.
+    source: builtin
+
+  # ---- Operational thresholds (global)
+  - name: reprotection_window_min
+    type: number
+    scope: global
+    default: 720
+    unit: minutes
+    description: How far ahead re-accommodation onto later flights is searched (same day by default).
+    source: builtin
+  - name: overnight_cutoff_min
+    type: number
+    scope: global
+    default: 1440
+    unit: minutes from day start
+    description: Passengers not re-accommodated before this time count as stranded overnight.
+    source: builtin
+
+  # ---- Entity-scoped parameters (columns). Flight core columns are always present; these document
+  #      optional attribute columns the UI can add. Users add more from the Flights table (§15.2).
+  - name: vip_count
+    type: number
+    scope: flight
+    default: 0
+    description: Example user-added column - number of VIP passengers (aggregate count).
+    source: user
