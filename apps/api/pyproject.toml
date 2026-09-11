@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aeronexus-api"
+version = "0.1.0"
+description = "AeroNexus FastAPI service"
+requires-python = ">=3.11"
+dependencies = [
+  "aeronexus-core",
+  "aeronexus-datagen",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "sqlmodel>=0.0.16",
+]
+
+[tool.setuptools.packages.find]
+include = ["aeronexus_api*"]
