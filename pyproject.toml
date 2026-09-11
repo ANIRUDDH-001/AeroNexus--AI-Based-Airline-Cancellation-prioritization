@@ -1,0 +1,18 @@
+# Root config for tools only. Packages are installed from packages/* and apps/api (see requirements-dev.txt).
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["packages/core", "packages/datagen", "packages/ml", "apps/api"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["apps/web", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
