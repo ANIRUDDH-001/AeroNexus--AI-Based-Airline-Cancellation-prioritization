@@ -3,7 +3,7 @@
 **AI-Based Cancellation Prioritization for Flight Disruptions**
 IndiGo × UPES AI Challenge · Problem Statement 01
 Team: Prachi Agarwalla, Aniruddh Vijayvargia
-Version 0.3 · September 2026 · Status: **decisions closed (§25) — ready for Phase 0**
+Version 0.4 · September 2026 · Status: **Phase 0 complete (2026-09-11) — Phase 1 (simulator) next**
 
 ---
 
@@ -295,7 +295,7 @@ Plans may combine actions (e.g., swap at hub + cancel one spoke cycle).
 Weights are placeholders to be tuned via the hand-crafted cases and, if available, IndiGo input.
 
 ### 10.3 Expression language
-Terms and user rules use a **safe expression evaluator** (Python `simpleeval` with a whitelisted function set). Available names: every metric, every entity attribute via helpers `sum_affected('attr')`, `max_affected('attr')`, `count_where(entity, predicate)`. No arbitrary code.
+Terms and user rules use a **safe expression evaluator** (own AST whitelist, `aeronexus_core.expressions`; see ADR-0003 — `simpleeval` was dropped). Available names: every metric, every entity attribute via helpers `sum_affected('attr')`, `max_affected('attr')`, `count_where(entity, predicate)`. No arbitrary code.
 
 ### 10.4 Ranking modes
 - `composite` (default, student brief): rank by NIS.
@@ -523,7 +523,7 @@ All responses include `config_hash` and `engine_version`.
 
 | Layer | Choice | Why | Free tier |
 |---|---|---|---|
-| Engine | Python 3.12, NumPy, pandas, NetworkX, Pydantic v2, `simpleeval` | Fast to build, testable, OR ecosystem | — |
+| Engine | Python 3.11+, NumPy, pandas, NetworkX, Pydantic v2 (own expression evaluator, ADR-0003) | Fast to build, testable, OR ecosystem | — |
 | Optimisation | OR-Tools CP-SAT (faculty B3), HiGHS via PuLP as alternative | Free, strong | — |
 | ML | LightGBM, SHAP, scikit-learn | Fast tabular models, explanations | Train on Colab/Kaggle free CPU/GPU if needed |
 | API | FastAPI + Uvicorn | Simple, typed, OpenAPI docs | — |
@@ -562,7 +562,7 @@ aeronexus/
   .github/workflows/ci.yml
 ```
 
-Practices: `uv` for Python env; `ruff` + `mypy`; pytest with the case suite as a gate; conventional commits; ADR (architecture decision record) for any change to §2; semantic versioning of the engine (`engine_version` in every response); seeds everywhere.
+Practices: `venv` + `pip` (editable installs via `requirements-dev.txt`; `uv` optional); `ruff` + `mypy`; pytest with the case suite as a gate; conventional commits; ADR (architecture decision record) for any change to §2; semantic versioning of the engine (`engine_version` in every response); seeds everywhere.
 
 ---
 
@@ -572,7 +572,7 @@ Assumes a 10-week window and two builders (see §25 Q1/Q2). Each phase ends with
 
 | Phase | Weeks | Deliverable (definition of done) |
 |---|---|---|
-| **P0 Foundations** | 1 | Repo, CI, schema (§6) as Pydantic models + SQLite, registries (§15) loading from YAML, generator `small` producing a valid day; `config_hash` works. |
+| **P0 Foundations** ✅ 2026-09-11 | 1 | Repo, CI, schema (§6) as Pydantic models + SQLite, registries (§15) loading from YAML, generator `small` producing a valid day; `config_hash` works. *Delivered beyond DoD:* `medium`/`large` generators, disruption templates, static constraints H4a/H4d/H5a/H5b/H6/H7/H3d/H10 live, NIS scorer with both ranking modes, API with config versioning, web shell with Data + Parameters pages, 47 tests. |
 | **P1 Simulator** | 2–3 | Propagation (§7) for aircraft + crew + passengers; incremental `apply()`; horizon; unit tests; cases 1, 5, 8 pass with a trivial "evaluate all single actions" ranker. |
 | **P2 Constraints + candidates** | 4 | Full H1–H10 (§8) as plugins with reasons; candidate generation (§9) incl. `CANCEL_CYCLE`, `SWAP`; cases 3, 4, 7, 11 pass. |
 | **P3 Score + search** | 5 | NIS registry with expressions and both ranking modes; B0/B1 baselines; beam search; light uncertainty (S); hysteresis; all 12 cases pass; latency ≤ 5 s on `medium`. |
