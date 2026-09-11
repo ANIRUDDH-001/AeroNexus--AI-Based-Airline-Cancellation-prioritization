@@ -16,3 +16,6 @@ search:
   at_risk_delay_threshold_min: 45
   max_staleness_min: 30
   top_n_returned: 3
+  forced_cancel_delay_min: 300   # propagation: a leg that cannot depart within this delay is a forced cancellation
+  standby_hold_min: 120          # max extra wait for a standby call-out before the leg is forced-cancelled
+  post_flight_duty_min: 30       # duty minutes after final on-blocks counted inside the FDP

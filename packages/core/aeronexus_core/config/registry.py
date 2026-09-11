@@ -109,6 +109,9 @@ class SearchSettings(BaseModel):
     at_risk_delay_threshold_min: int = Field(default=45, ge=0)
     max_staleness_min: int = Field(default=30, ge=0, description="abstain if inputs older than this")
     top_n_returned: int = Field(default=3, ge=1)
+    forced_cancel_delay_min: int = Field(default=300, ge=0, description="propagation: a leg that cannot depart within this delay is a forced cancellation")
+    standby_hold_min: int = Field(default=120, ge=0, description="max extra wait for a standby crew call-out before the leg is forced-cancelled")
+    post_flight_duty_min: int = Field(default=30, ge=0, description="duty minutes after final on-blocks counted inside the FDP")
 
 
 class EngineConfig(BaseModel):
