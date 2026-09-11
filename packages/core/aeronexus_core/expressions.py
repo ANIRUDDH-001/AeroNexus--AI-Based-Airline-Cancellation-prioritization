@@ -105,6 +105,16 @@ BUILTIN_FUNCTIONS: dict[str, Callable[..., Any]] = {
 }
 
 
+# Helper functions the engine binds at evaluation time (scoring.nis.affected_helpers). Listed here so a
+# term can be validated structurally before any state exists.
+KNOWN_HELPER_NAMES: frozenset[str] = frozenset({"sum_affected", "max_affected", "count_affected"})
+SAFE_METHODS: frozenset[str] = frozenset({"get"})  # methods allowed on namespaces / dicts
+
+
+def known_function_names() -> frozenset[str]:
+    return frozenset(BUILTIN_FUNCTIONS) | KNOWN_HELPER_NAMES
+
+
 class _Evaluator(ast.NodeVisitor):
     def __init__(self, names: Mapping[str, Any], functions: Mapping[str, Callable[..., Any]]):
         self.names = names
@@ -198,13 +208,24 @@ class _Evaluator(ast.NodeVisitor):
         return self.visit(node.body) if self.visit(node.test) else self.visit(node.orelse)
 
     def visit_Call(self, node: ast.Call) -> Any:
+        if node.keywords:
+            raise ExpressionError("keyword arguments are not allowed")
+        if isinstance(node.func, ast.Attribute):
+            # namespace.get('key', default) - the only method calls allowed
+            if node.func.attr not in SAFE_METHODS:
+                raise ExpressionError(f"method not allowed: {node.func.attr!r}")
+            base = self.visit(node.func.value)
+            if not isinstance(base, (Namespace, dict)):
+                raise ExpressionError(f"{node.func.attr}() only allowed on namespaces")
+            args = [self.visit(a) for a in node.args]
+            if isinstance(base, dict):
+                base = Namespace(base)
+            return base.get(*args)
         if not isinstance(node.func, ast.Name):
             raise ExpressionError("only direct calls to whitelisted functions are allowed")
         fn = self.functions.get(node.func.id)
         if fn is None:
             raise ExpressionError(f"function not allowed: {node.func.id!r}")
-        if node.keywords:
-            raise ExpressionError("keyword arguments are not allowed")
         args = [self.visit(a) for a in node.args]
         try:
             return fn(*args)
@@ -241,6 +262,19 @@ def compile_expression(source: str) -> ast.Expression:
             raise ExpressionError(f"syntax not allowed: {type(node).__name__}")
         if isinstance(node, ast.Attribute) and node.attr.startswith("_"):
             raise ExpressionError(f"attribute {node.attr!r} is not accessible")
+        if isinstance(node, ast.Name) and node.id.startswith("__"):
+            raise ExpressionError(f"name {node.id!r} is not accessible")
+        if isinstance(node, ast.Call):
+            if node.keywords:
+                raise ExpressionError("keyword arguments are not allowed")
+            if isinstance(node.func, ast.Name):
+                if node.func.id not in known_function_names():
+                    raise ExpressionError(f"function not allowed: {node.func.id!r}")
+            elif isinstance(node.func, ast.Attribute):
+                if node.func.attr not in SAFE_METHODS:
+                    raise ExpressionError(f"method not allowed: {node.func.attr!r}")
+            else:
+                raise ExpressionError("only direct calls to whitelisted functions are allowed")
     return tree
 
 
