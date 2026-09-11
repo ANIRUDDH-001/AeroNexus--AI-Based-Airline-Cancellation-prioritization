@@ -81,6 +81,7 @@ class GeneratorParams:
     # crew
     pairing_legs: tuple[int, int] = (2, 4)
     report_before_std_min: int = DEFAULT_REPORT_BEFORE_STD_MIN
+    post_flight_duty_min: int = 30  # must match search.post_flight_duty_min so generated pairings are legal in the simulator
     standby_per_hub: tuple[int, int] = (2, 4)
     standby_callout: tuple[int, int] = (60, 90)
     cat3_share: float = 0.6
@@ -394,7 +395,7 @@ class _Gen:
                 while j < len(legs) and len(pairing) < max_legs and len(pairing) < DEFAULT_MAX_SECTORS:
                     cand = legs[j]
                     limit = fdp_limit(report, len(pairing) + 1)
-                    if cand.sta - report > limit:
+                    if cand.sta + p.post_flight_duty_min - report > limit:
                         break
                     pairing.append(cand)
                     j += 1
