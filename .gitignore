@@ -20,6 +20,7 @@ data/instances/*.json
 # Node
 node_modules/
 apps/web/dist/
+*.tsbuildinfo
 
 # OS / editors
 .DS_Store
@@ -27,3 +28,6 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# Google Drive / Windows folder metadata
+.tmp.driveupload/
