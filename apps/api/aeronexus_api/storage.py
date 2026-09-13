@@ -219,7 +219,8 @@ def get_run(run_id: str) -> tuple[Run, str] | None:
         return (Run.model_validate(r.payload), r.instance_id) if r else None
 
 
-def decide_run(run_id: str, accepted_plan: int | None, override_reason: str | None) -> Run | None:
+def decide_run(run_id: str, accepted_plan: int | None, override_reason: str | None,
+               committed_at: str | None = None) -> Run | None:
     with session() as s:
         r = s.get(RunRow, run_id)
         if r is None:
@@ -229,6 +230,8 @@ def decide_run(run_id: str, accepted_plan: int | None, override_reason: str | No
         p = dict(r.payload)
         p["accepted_plan"] = accepted_plan
         p["override_reason"] = override_reason
+        if committed_at is not None:
+            p["committed_at"] = committed_at
         r.payload = p
         s.add(r)
         s.commit()

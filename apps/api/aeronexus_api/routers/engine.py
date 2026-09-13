@@ -1,6 +1,7 @@
 """Engine endpoints (Plan §19): recommend, what-if, timeline, runs (audit log)."""
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -138,9 +139,23 @@ def timeline(instance_id: str, t: int = 0) -> dict:
     return build_timeline(inst, cfg, t, instance_id)
 
 
+def committed_summary(inst: Instance) -> dict:
+    """The decisions already taken today, in the shape the UI shows next to the clock."""
+    from aeronexus_core.search.explain import describe_plan
+
+    c = inst.committed
+    actions = [Action(type="CANCEL_LEG", target_flights=[f]) for f in c.cancelled]
+    actions += [Action(type="DELAY", target_flights=[f], params={"delay_min": m}) for f, m in c.delays.items()]
+    actions += [Action(type="SWAP", target_flights=[f], params={"swap_tail": c.tail_override.get(f, "?")}) for f in c.swaps]
+    return {"cancelled": list(c.cancelled), "delays": dict(c.delays), "swaps": list(c.swaps),
+            "tail_override": dict(c.tail_override), "labels": describe_plan(actions, inst) if actions else [],
+            "count": len(c.cancelled) + len(c.delays) + len(c.swaps)}
+
+
 def build_timeline(inst, cfg, t: int, instance_id: str) -> dict:
-    """Pure builder shared by the endpoint and the static-runs precompute script."""
-    st = State(clock=t, instance=inst)
+    """Pure builder shared by the endpoint and the static-runs precompute script. Starts from the day's
+    committed decisions, so accepted plans show up as cancelled-by-plan legs and are not re-proposed."""
+    st = State(clock=t, instance=inst, decisions=inst.committed)
     res = Simulator(inst, cfg).run(st.decisions, clock=t)
     risk = {r.flight_id: r for r in detect_at_risk(st, res, cfg)}
     flights = []
@@ -161,6 +176,7 @@ def build_timeline(inst, cfg, t: int, instance_id: str) -> dict:
         "instance_id": instance_id, "clock": t, "clock_hhmm": fmt_time(t),
         "flights": flights, "rotations": rotations,
         "disruptions": [d.model_dump() for d in inst.disruptions],
+        "committed": committed_summary(inst),
         "at_risk": [{"flight": r.flight_id, "reasons": r.reasons, "delay_min": r.delay_min, "forced": r.forced}
                     for r in risk.values()],
         "summary": {
@@ -202,6 +218,41 @@ def decide(run_id: str, req: DecisionRequest) -> Run:
         raise HTTPException(status_code=422, detail=f"run has {len(got[0].plans)} plan(s); cannot accept #{req.accepted_plan}")
     if req.accepted_plan is None and not (req.override_reason or "").strip():
         raise HTTPException(status_code=422, detail="an override needs a reason")
-    run = storage.decide_run(run_id, req.accepted_plan, req.override_reason)
+    prev, iid = got
+    if prev.committed_at and req.accepted_plan != prev.accepted_plan:
+        raise HTTPException(status_code=409, detail=f"plan #{prev.accepted_plan} of this run is already committed to the "
+                                                    "day; reset the day's committed decisions before choosing differently")
+    committed_at = None
+    if req.accepted_plan is not None and not prev.committed_at:
+        # accepting a plan makes it part of the day: later recommendations start from it (Plan §7 / §18)
+        inst = storage.get_instance(iid)
+        if inst is None:
+            raise HTTPException(status_code=404, detail="instance not found")
+        st = State(clock=prev.decision_time, instance=inst, decisions=inst.committed)
+        for a in prev.plans[req.accepted_plan - 1].actions:
+            st = st.apply(a)
+        storage.replace_instance(iid, inst.model_copy(update={"committed": st.decisions}))
+        committed_at = datetime.now(UTC).isoformat(timespec="seconds")
+    run = storage.decide_run(run_id, req.accepted_plan, req.override_reason, committed_at)
     assert run is not None
     return run
+
+
+@router.get("/data/instances/{iid}/committed")
+def get_committed(iid: str) -> dict:
+    inst = storage.get_instance(iid)
+    if inst is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+    return committed_summary(inst)
+
+
+@router.post("/data/instances/{iid}/committed/reset")
+def reset_committed(iid: str) -> dict:
+    """Clear today's committed decisions (undo all accepted plans); runs keep their record."""
+    inst = storage.get_instance(iid)
+    if inst is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+    from aeronexus_core.model import Decisions
+
+    storage.replace_instance(iid, inst.model_copy(update={"committed": Decisions()}))
+    return committed_summary(storage.get_instance(iid))  # type: ignore[arg-type]

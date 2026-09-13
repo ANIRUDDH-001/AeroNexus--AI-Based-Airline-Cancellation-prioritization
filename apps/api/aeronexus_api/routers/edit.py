@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, ValidationError
 
 from aeronexus_core.config import ParameterDef
-from aeronexus_core.model import Disruption, Instance
+from aeronexus_core.model import Aircraft, Airport, Crew, Disruption, Flight, Instance, Itinerary
 from aeronexus_core.validate import validate_instance
 from aeronexus_datagen.disruptions import inject, parse_spec
 
@@ -97,6 +97,9 @@ class ColumnRequest(BaseModel):
 
 @write.post("/columns")
 def add_column(iid: str, req: ColumnRequest) -> dict:
+    core = {"flights": Flight, "aircraft": Aircraft, "crews": Crew, "airports": Airport, "itineraries": Itinerary}[req.entity]
+    if req.name in core.model_fields:
+        raise HTTPException(status_code=422, detail=f"'{req.name}' is a core column of {req.entity}; choose another name")
     """The §15.2 flow: add a column -> every row gets the default in ``attributes`` -> a parameter is
     registered (scope = entity) so score terms and rules can reference it immediately."""
     inst = _load(iid)

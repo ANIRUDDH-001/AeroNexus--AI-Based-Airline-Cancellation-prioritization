@@ -95,6 +95,11 @@ def main(argv: list[str] | None = None) -> int:
               f"{(top.metrics.get('forced_downstream_cancellations') if top else 0):g}  "
               f"top-1 {' + '.join(top.explanation['actions']) if top and top.actions else 'do nothing'}  ({run.latency_ms:.0f} ms)")
 
+    # metric names for the Parameters page's expression helper (served as /config/metrics in demo mode)
+    from aeronexus_core.scoring import Metrics
+
+    (out / "metrics.json").write_text(json.dumps({"metrics": Metrics.names()}), encoding="utf-8")
+
     # configuration snapshot in the API envelope shape
     (out / "config.json").write_text(json.dumps({
         "version": 1, "hash": chash, "updated_at": datetime.now(UTC).isoformat(timespec="seconds"),
