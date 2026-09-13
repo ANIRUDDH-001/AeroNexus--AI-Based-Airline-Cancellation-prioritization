@@ -7,7 +7,10 @@ name = "aeronexus-ml"
 version = "0.1.0"
 description = "AeroNexus ML surrogate and calibration models (Phase 5)"
 requires-python = ">=3.11"
-dependencies = ["aeronexus-core"]
+dependencies = ["aeronexus-core", "aeronexus-datagen", "numpy>=1.26", "scikit-learn>=1.4", "joblib>=1.3", "scipy>=1.11"]
+
+[project.optional-dependencies]
+boost = ["lightgbm>=4.0", "shap>=0.45"]
 
 [tool.setuptools.packages.find]
 include = ["aeronexus_ml*"]
