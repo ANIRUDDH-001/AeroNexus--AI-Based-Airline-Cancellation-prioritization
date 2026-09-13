@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from ..config.registry import EngineConfig
-from ..fdtl import DEFAULT_FDP_TABLE, fdp_limit
+from ..fdtl import DEFAULT_FDP_TABLE, fdp_limit, normalise_table
 from ..model import Aircraft, Crew, Decisions, Disruption, Flight, Instance, Itinerary, TimeWindow
 from ..scoring.metrics import Metrics
 
@@ -134,6 +134,7 @@ class Simulator:
                 self.report_before = int(c.config.get("report_before_std_min", 60))
             if c.plugin == "crew_location" and c.enabled:
                 self.callout_lead = int(c.config.get("standby_callout_lead_min", 90))
+        self.fdp_table = normalise_table(self.fdp_table)  # normalised once; fdp_limit accepts this form
         self.lvp_required = ["CAT3"]
         for c in config.constraints:
             if c.plugin == "crew_qualification" and c.enabled:
@@ -384,21 +385,34 @@ class Simulator:
                         earliest = max(earliest, wait_until)
             need_cat3 = lvp_window_at(earliest) is not None
 
+            block = f.block_min
+            if sample and fid in sample.block_factor:
+                block = int(round(block * sample.block_factor[fid]))
+            # --- ground hold: if the arrival would fall inside a closure or curfew at the destination, wait on
+            # the ground at the origin (ATC ground-delay behaviour) rather than holding in the air
+            dest_ap = self._airports[f.dest]
+            why = "capacity/closure"
+            for _ in range(3):
+                w = _in(earliest + block, closure.get(f.dest, []))
+                if w is None:
+                    w = _in(earliest + block, dest_ap.curfew_windows)
+                    if w is not None:
+                        why = f"{f.dest} curfew"
+                if not w:
+                    break
+                earliest = max(earliest, w.end - block)
             # --- departure slot (capacity, closure) and curfew at origin
             dep = slot(f.origin, earliest)
             w = _in(dep, self._airports[f.origin].curfew_windows)
             if w:
                 dep = slot(f.origin, w.end)
+                why = f"{f.origin} curfew"
             if dep - f.std > self.forced_cancel_delay:
                 finish(LegOutcome(fid, "CANCELLED_FORCED", tail=tail, crew_id=crew_id,
-                                  reason=f"could not depart {f.origin} within {self.forced_cancel_delay} min (capacity/closure)"))
+                                  reason=f"could not depart {f.origin} within {self.forced_cancel_delay} min ({why})"))
                 continue
-            block = f.block_min
-            if sample and fid in sample.block_factor:
-                block = int(round(block * sample.block_factor[fid]))
-            arr = dep + block
-            arr = slot(f.dest, arr)  # arrival capacity: airborne holding / flow management
-            if _in(arr, self._airports[f.dest].curfew_windows):
+            arr = slot(f.dest, dep + block)  # arrival capacity: short airborne holding / flow management
+            if _in(arr, dest_ap.curfew_windows):
                 finish(LegOutcome(fid, "CANCELLED_FORCED", tail=tail, crew_id=crew_id,
                                   reason=f"would arrive {f.dest} inside curfew"))
                 continue
@@ -567,8 +581,10 @@ class Simulator:
                 affected.append(fid)
             else:
                 m.total_delay_min += o.delay_min
+                # delay beyond what was already known (source delay), whether it was imposed by the plan or
+                # propagated - an imposed delay is still delay the network suffers
                 extra = o.delay_min - source_delay.get(fid, 0)
-                if fid not in decisions.delays and extra > 0:
+                if extra > 0:
                     m.propagated_delay_min += extra
                 if o.delay_min > 0:
                     affected.append(fid)

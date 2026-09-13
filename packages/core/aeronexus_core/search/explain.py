@@ -54,6 +54,37 @@ def describe_action(a: Action, inst: Instance) -> str:
     return f"{a.type} {nums}"
 
 
+def describe_plan(actions: list[Action], inst: Instance) -> list[str]:
+    """Plan-level labels: cancellations whose flight sets overlap (a cycle chosen for one at-risk flight and
+    a cycle for its neighbour on the same rotation) are merged into one line so the controller reads
+    "cancel these four legs" rather than two overlapping cycles. Other actions keep describe_action()."""
+    groups: list[tuple[int, set[str]]] = []  # (position of first member, flight ids)
+    labels: list[tuple[int, str]] = []
+    for i, a in enumerate(actions):
+        if a.type not in ("CANCEL_LEG", "CANCEL_CYCLE"):
+            labels.append((i, describe_action(a, inst)))
+            continue
+        fids = set(a.target_flights)
+        hit = next((g for g in groups if g[1] & fids), None)
+        if hit is None:
+            groups.append((i, fids))
+        else:
+            hit[1].update(fids)
+            # absorb any later group that now overlaps too
+            for g in [g for g in groups if g is not hit and g[1] & hit[1]]:
+                hit[1].update(g[1])
+                groups.remove(g)
+    for pos, fids in groups:
+        singles = [a for a in actions if a.type in ("CANCEL_LEG", "CANCEL_CYCLE") and set(a.target_flights) == fids]
+        if singles:
+            labels.append((pos, describe_action(singles[0], inst)))
+            continue
+        legs = sorted((inst.flight(f) for f in fids), key=lambda f: (f.std, f.id))
+        route = "→".join([legs[0].origin, *[f.dest for f in legs]])
+        labels.append((pos, f"Cancel {len(legs)} legs {route} ({', '.join(f.number for f in legs)})"))
+    return [lbl for _, lbl in sorted(labels, key=lambda t: t[0])]
+
+
 def plan_reasons(m: Metrics, res: SimResult, inst: Instance, actions: list[Action]) -> list[str]:
     reasons: list[str] = []
     decided = {fid for a in actions if a.type in ("CANCEL_LEG", "CANCEL_CYCLE") for fid in a.target_flights}

@@ -1,4 +1,5 @@
-# Network Impact Score terms (Plan §10.2). Lower NIS is better.
+# Network Impact Score terms (Plan §10.2). Lower NIS is better. One NIS point ≈ ₹1,000 of network impact,
+# so money terms carry weight 0.001 and everything else is expressed in the same unit.
 # Each term is a safe expression over the metrics namespace (packages/core/aeronexus_core/scoring/metrics.py)
 # plus helpers sum_affected('attr') / max_affected('attr') / count_affected(). Weights are PLACEHOLDERS to be
 # tuned on the hand-crafted cases (data/cases) — do not present them as calibrated.
@@ -7,96 +8,96 @@ objective_terms:
   - name: forced_downstream_cancellations
     level: L1
     expression: forced_downstream_cancellations
-    weight: 5000
+    weight: 2000
     description: Flights that could no longer operate because of this plan (aircraft position, crew, curfew).
   - name: propagated_delay
     level: L1
     expression: propagated_delay_min
-    weight: 8
-    description: Extra delay minutes pushed onto other flights.
+    weight: 3
+    description: Delay minutes beyond what was already known, whether propagated or imposed by the plan.
   - name: next_wave_shortfall
     level: L1
     expression: next_wave_shortfall
-    weight: 3000
+    weight: 1500
     description: Aircraft/crew missing for the next morning's first wave.
 
   # ---- L2 Passenger harm
   - name: pax_cancelled
     level: L2
     expression: pax_cancelled
-    weight: 40
+    weight: 10
     description: Passengers booked on flights this plan cancels.
   - name: pax_reprotect_delay
     level: L2
     expression: pax_reprotect_delay_hours
-    weight: 15
+    weight: 1
     description: Passenger-hours until re-accommodated on later flights.
   - name: pax_stranded_overnight
     level: L2
     expression: pax_stranded_overnight
-    weight: 400
+    weight: 25
     description: Passengers with no same-day re-accommodation.
   - name: misconnects
     level: L2
     expression: misconnects
-    weight: 60
+    weight: 8
     description: Connecting passengers who miss an onward flight.
   - name: special_assistance_affected
     level: L2
     expression: special_assistance_affected
-    weight: 200
+    weight: 30
     description: Special-assistance passengers on affected flights (aggregate count, no PII).
   - name: high_value_affected
     level: L2
     expression: high_value_affected
-    weight: 120
+    weight: 20
     description: High-value passengers on affected flights (aggregate count).
   - name: partner_pax_affected
     level: L2
     expression: partner_pax_affected
-    weight: 150
+    weight: 25
     description: Codeshare / interline passengers affected (partner obligations).
 
   # ---- L3 Cost (INR)
   - name: compensation
     level: L3
     expression: compensation_inr
-    weight: 1
+    weight: 0.001
     description: DGCA CAR Sec 3 Series M Part IV compensation (defaults in parameters.yaml — VERIFY current CAR).
   - name: hotel_meal
     level: L3
     expression: pax_stranded_overnight * hotel_meal_rate_inr
-    weight: 1
+    weight: 0.001
     description: Hotel and meal cost for stranded passengers.
   - name: crew_standby_used
     level: L3
     expression: crew_standby_used
-    weight: 500
+    weight: 50
     description: Standby crews called out.
   - name: crew_out_of_position
     level: L3
     expression: crew_out_of_position
-    weight: 800
+    weight: 100
     description: Crews left away from their next duty station.
   - name: swap_cost
     level: L3
     expression: swaps
-    weight: 300
+    weight: 30
     description: Aircraft swaps performed.
   - name: revenue_loss
     level: L3
     expression: pax_cancelled * avg_fare_inr
-    weight: 0.5
+    weight: 0.0005
     description: Approximate revenue at risk on cancelled flights.
 
   # ---- L4 Robustness
   - name: buffer_consumed
     level: L4
     expression: buffer_consumed_min
-    weight: 2
+    weight: 0.5
     description: Turnaround / FDP slack consumed by the plan.
   - name: tail_risk
     level: L4
     expression: tail_risk_penalty
-    weight: 1
+    weight: 0.5
     description: (P90 - mean) of L1+L2 across sampled scenarios.

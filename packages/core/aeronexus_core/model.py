@@ -367,6 +367,12 @@ class Run(BaseModel):
     accepted_plan: int | None = None
     override_reason: str | None = None
     narrative: str | None = None  # LLM narration; never part of the decision record (§14.1)
+    notes: list[str] = Field(default_factory=list)                 # e.g. latency-budget reductions, hysteresis
+    at_risk: list[dict[str, Any]] = Field(default_factory=list)   # flights the baseline flagged, with reasons
+    baseline_metrics: dict[str, float] = Field(default_factory=dict)  # "do nothing" outcome
+    plans_evaluated: int = 0
+    depth_reached: int = 0
+    whatif: list[Plan] = Field(default_factory=list)  # caller-supplied plans, always returned with their rank
 
 
 class Decisions(BaseModel):

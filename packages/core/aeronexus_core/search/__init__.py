@@ -1,4 +1,5 @@
-"""Plan search (Plan §11). Implemented in Phase 3.
+"""Plan search (Plan §11): recommend(instance, config, clock) -> Run."""
+from .candidates import AtRisk, detect_at_risk, generate_candidates
+from .recommend import recommend
 
-Contract: recommend(state, config) -> Run  (top-N plans + excluded candidates + latency)
-"""
+__all__ = ["AtRisk", "detect_at_risk", "generate_candidates", "recommend"]

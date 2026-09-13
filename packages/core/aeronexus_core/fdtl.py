@@ -19,15 +19,31 @@ DEFAULT_MAX_SECTORS = 6
 DEFAULT_REPORT_BEFORE_STD_MIN = 60
 
 
-def fdp_limit(report_min: int, sectors: int, table: list[dict[str, Any]] | None = None) -> int:
-    """Max FDP in minutes for a duty reporting at ``report_min`` (minutes from day start) flying ``sectors`` legs."""
-    table = table or DEFAULT_FDP_TABLE
+def normalise_table(table: list[dict[str, Any]] | None) -> list[tuple[int, int, dict[int, int]]]:
+    """Convert a YAML table into (lo, hi, {sectors: limit}) tuples once, so lookups are cheap."""
+    rows = []
+    for row in table or DEFAULT_FDP_TABLE:
+        lo, hi = row["band"]
+        rows.append((int(lo), int(hi), {int(k): int(v) for k, v in row["by_sectors"].items()}))
+    return rows
+
+
+_DEFAULT_NORM = normalise_table(DEFAULT_FDP_TABLE)
+
+
+def fdp_limit(report_min: int, sectors: int, table: list[dict[str, Any]] | list[tuple[int, int, dict[int, int]]] | None = None) -> int:
+    """Max FDP in minutes for a duty reporting at ``report_min`` (minutes from day start) flying ``sectors`` legs.
+    ``table`` may be the YAML form or the output of ``normalise_table``."""
+    if table is None:
+        rows = _DEFAULT_NORM
+    elif table and isinstance(table[0], dict):
+        rows = normalise_table(table)  # type: ignore[arg-type]
+    else:
+        rows = table  # type: ignore[assignment]
     rep = report_min % 1440
     sectors = max(1, sectors)
-    for row in table:
-        lo, hi = row["band"]
+    for lo, hi, by in rows:
         if lo <= rep <= hi:
-            by = {int(k): int(v) for k, v in row["by_sectors"].items()}
             if sectors in by:
                 return by[sectors]
             return by[max(by)]  # beyond the table: use the most restrictive listed value
