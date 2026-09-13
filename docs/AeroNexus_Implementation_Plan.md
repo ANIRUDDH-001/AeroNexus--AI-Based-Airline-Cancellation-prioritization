@@ -595,6 +595,17 @@ cut-off had dropped it, so an intervention could win the sampled comparison unop
 cancellations in one plan are presented as a single "cancel N legs" label. FDTL and DGCA compensation values
 remain marked VERIFY.
 
+**Hardening pass (2026-09-13)** after an end-to-end review of the live deployment: realised-past state model
+(§7 as designed — the 00:00 forecast is frozen up to the decision time, so the day no longer degrades as the
+clock moves); accepted plans are committed to the day and later runs start from them; "do nothing" always
+compared under sampled futures; diverse top-3 (spare-tail variants collapse into alternatives); honest
+passenger counts (decided vs forced); confidence readout suppressed below three sampled futures; deterministic
+audit mode and per-run `instance_hash` / `effective` record; decision horizon for large days; DGCA
+compensation exemption for weather/ATC/closure causes; CAT-III share 0.85 and a legs-per-tail cap in the
+generator; CORS origin normalisation, request validation (422 instead of 500), optional write key, narration
+adapter defaults for Gemini with truncation/hallucination guards; keep-alive workflow and an engine status /
+wake control in the UI. Ladder figures were re-measured on the new state model (README).
+
 **Roles (decided)**: *Engine owner* — `packages/core`, `packages/datagen`, `packages/ml`, benchmark scripts. *Product owner* — `apps/api`, `apps/web`, `data/cases`, technical brief, deployment. Both review the simulator design (P1) and the constraint catalogue (P2) together before code.
 
 ---

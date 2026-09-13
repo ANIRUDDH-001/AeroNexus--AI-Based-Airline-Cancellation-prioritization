@@ -25,9 +25,9 @@ A working, deployable system (monorepo `aeronexus/`), free-tier throughout:
 | **Engine** (`packages/core`) | Domain model; discrete-event simulator; hard-constraint plugins; Network Impact Score; beam search; explanations; 12-case suite; benchmark ladder |
 | **Synthetic data** (`packages/datagen`) | Seeded IndiGo-like network generator (12 airports, 40 A320/A321/ATR tails, ~250 flights, crews with FDTL windows, passenger itineraries) and disruption templates |
 | **Learning** (`packages/ml`) | LightGBM surrogate pre-ranker trained on simulated evaluations; SHAP score drivers |
-| **API** (`apps/api`) | FastAPI, 36 endpoints; SQLite locally, Supabase Postgres hosted; every run stored with its `config_hash` |
+| **API** (`apps/api`) | FastAPI, 38 endpoints; SQLite locally, Supabase Postgres hosted; every run stored with its `config_hash`, the day's content hash and what the search actually used |
 | **UI** (`apps/web`) | React + TypeScript, Notion-style light theme: Overview, Disruptions, Recommendations, Flights & resources, Parameters, Cases & benchmarks, Runs, Data |
-| **Quality** | 93 pytest tests, ruff, GitHub Actions CI; offline `static-runs` demo bundle |
+| **Quality** | 106 pytest tests, ruff, GitHub Actions CI; offline `static-runs` demo bundle; keep-alive workflow for the hosted engine |
 
 No real IndiGo data is used or assumed. Every number in this brief is reproducible from a seed.
 
@@ -47,6 +47,11 @@ airborne holding when the destination is closed) and cancels itself if the delay
 Passengers on cancelled or missed connections are re-protected onto later flights with seats, or counted as
 stranded overnight. Output: per-leg outcomes and ~20 day-level metrics (forced downstream cancellations,
 propagated delay, next-wave shortfall, misconnects, stranded passengers, standby use, compensation exposure…).
+Decision time is modelled as *realised past + forecast future*: the day is forecast once from 00:00 under the
+decisions already committed, legs that forecast shows departed (or failed) before the decision time are
+frozen, and only the future is re-simulated for each candidate plan. Accepting a plan commits it to the
+day, so the next decision starts from it. Compensation follows the DGCA rule: payable for airline-attributable
+cancellations (AOG, crew), reported separately but not charged for weather, ATC and closure causes.
 
 **Hard constraints (P2).** Crew legality, AOG, curfews, fleet/type compatibility, protected flights,
 minimum turnaround, delay caps, and user-defined rules (`H10`) are plugins. A violated constraint removes
@@ -101,28 +106,27 @@ that must be *excluded by a named constraint*, and metric bounds.
 different random seed and ±5 % block-time noise the search never saw, 40 futures per plan. This guards
 against fitting the sampled futures; it does not measure model error against real operations.
 
-| Policy | Mean NIS | vs B0 | Win rate vs B0 | Forced cancels | Pax stranded | Latency |
+| Policy | Mean NIS | vs doing nothing | vs B0 (win rate) | Forced cancels | Pax stranded | Latency |
 |---|---|---|---|---|---|---|
-| Do nothing | 54,780 | −9.5 % | 33 % | 5.17 | 650 | — |
-| B0 naive (cancel the at-risk flight with fewest pax) | 60,536 | — | — | 5.59 | 734 | — |
-| B1 weighted heuristic (pax + downstream legs + crew risk) | 56,000 | −7.5 % | 28 % | 4.61 | 692 | — |
-| **B2 AeroNexus** | **44,537** | **−26.4 %** | **83 %** | **2.08** | **550** | 1.7 s / p95 3.2 s |
-| B2s AeroNexus + surrogate pre-rank | 45,921 | −24.1 % | 83 % | 2.07 | 583 | 1.8 s / p95 3.4 s |
+| Do nothing | 47,414 | — | −9.0 % | 4.55 | 585 | — |
+| B0 naive (cancel the at-risk flight with fewest pax) | 52,128 | +9.9 % | — | 4.74 | 663 | — |
+| B1 weighted heuristic (pax + downstream legs + crew risk) | 47,370 | −0.1 % | −9.1 % | 3.96 | 604 | — |
+| **B2 AeroNexus** | **41,562** | **−12.3 %** | **−20.3 % (67 %)** | **2.30** | **564** | 1.3 s / p95 2.7 s |
+| B2s AeroNexus + surrogate pre-rank | 41,699 | −12.1 % | −20.0 % (67 %) | 2.30 | 570 | 1.6 s / p95 3.4 s |
 
 30 generated days (18 with at-risk flights; small/medium networks; fog, capacity, AOG, crew, ATC, mixed),
 `data/benchmarks/latest.json`. The naive rule is *worse than doing nothing*: cancelling the lightest at-risk
-flight often removes an aircraft the network still needed — so the conservative headline is **−18.7 % versus
-doing nothing** (44,537 vs 54,780), with −26.4 % versus B0 as context. The engine's gain comes mostly from fewer
-forced downstream cancellations (2.1 vs 5.2 doing nothing) and fewer stranded passengers (550 vs 650).
+flight often removes an aircraft the network still needed — so the conservative headline is **−12.3 % versus
+doing nothing** (41,562 vs 47,414), with −20.3 % versus B0 as context. The engine's gain comes mostly from fewer
+forced downstream cancellations (2.3 vs 4.6 doing nothing) and fewer stranded passengers (564 vs 585).
 
 The same protocol on **200 generated scenarios** (124 with at-risk flights, `data/benchmarks/ladder_200.json`)
-gives a more conservative picture, which we report as the headline: **AeroNexus −13.5 % NIS vs doing nothing
-(59,339 vs 68,585) and −16.3 % vs B0, win rate 82 %, forced downstream cancellations 4.1 vs 6.9, stranded 650
-vs 780** (B1 −1.8 % vs B0).
-By disruption type the gain is largest for AOG (−30 %) and crew shortage (−19 %) and smallest for fog (−11 %):
-with a lognormal fog end (σ = 0.5) the engine's plan is worse than waiting in 6 of 30 fog days — the price of
-deciding on ten sampled futures when the evaluation draws forty. Raising `S` narrows that gap at the cost of
-latency; it is a configuration knob, not a code change.
+is the headline we report: **AeroNexus −14.0 % NIS vs doing nothing (41,343 vs 48,063) and −17.4 % vs B0,
+win rate 73 %, forced downstream cancellations 2.9 vs 5.2, stranded 479 vs 521** (B1 −0.1 % vs doing nothing).
+By disruption type (vs doing nothing) the gain is largest for AOG (−24 %), then fog + AOG (−14 %) and crew
+shortage (−12 %), and smallest for fog alone (−6 %): with a lognormal fog end (σ = 0.5) the engine's plan is
+worse than waiting on 6 of 29 fog days — the price of deciding on ten sampled futures when the evaluation draws
+forty. Raising `S` narrows that gap at the cost of latency; it is a configuration knob, not a code change.
 
 ## 7. Demo and deployment
 
@@ -134,8 +138,10 @@ precomputed `static-runs` bundle (demo day, six decision times, cases, ladder) a
 ## 8. Honest limitations
 
 * **Synthetic data.** Network structure, block times, crew pairings and passenger flows are generated to
-  look like IndiGo's but are not calibrated on real operations. FDTL limits and DGCA compensation values are
-  placeholders marked VERIFY.
+  look like IndiGo's but are not calibrated on real operations. FDTL limits and DGCA compensation tariffs are
+  placeholders marked VERIFY; the CAT-III crew share (85 %) is an assumption, not a measurement.
+* **Realised past = the 00:00 forecast.** With no live feed, "what already happened" is what the simulator
+  expected; a real deployment would replace it with actual movement data.
 * **Single crew set per flight**, no cabin-crew model, no maintenance slots, no slot-swap negotiation with
   ATC, no revenue management feed.
 * **Bounded swaps** only (same base, same type or configured compatibility); no full re-fleeting

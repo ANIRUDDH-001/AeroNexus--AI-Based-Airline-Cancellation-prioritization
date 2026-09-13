@@ -15,7 +15,9 @@ The single source of truth for design and roadmap is
 
 1. **Simulate** — a discrete-event simulator propagates a plan through the day: aircraft rotations and
    turnarounds, crew FDTL limits and standby call-outs, airport closures / curfews / capacity (ground-hold),
-   passenger connections and re-protection (`packages/core/aeronexus_core/simulator`).
+   passenger connections and re-protection (`packages/core/aeronexus_core/simulator`). Decision time is
+   *realised past + forecast future*: legs the forecast shows departed before the decision time are frozen,
+   only the future is re-simulated, and accepted plans become committed decisions the next run starts from.
 2. **Filter** — hard constraints H1–H10 are plugins that reject infeasible actions with a reason; they are
    never traded off against the score (`constraints/`).
 3. **Search** — candidates (cancel leg, cancel cycle, delay, swap) are pre-ranked, simulated on sampled
@@ -49,14 +51,17 @@ never sees, 40 futures per plan):
 
 | Run | AeroNexus vs doing nothing | vs naive rule B0 (win rate) | Forced cancellations (B2 / do nothing / B0) | Stranded pax (B2 / B0) |
 |---|---|---|---|---|
-| 30 generated days, 18 with at-risk flights (`data/benchmarks/latest.json`) | 44,537 vs 54,780 NIS (**−19 %**) | −26 % (83 %) | 2.1 / 5.2 / 5.6 | 550 / 734 |
-| 200 generated days, 124 with at-risk flights (`ladder_200.json`) | 59,339 vs 68,585 NIS (**−13 %**) | −16 % (82 %) | 4.1 / 6.9 / 6.9 | 650 / 780 |
+| 30 generated days, 18 with at-risk flights (`data/benchmarks/latest.json`) | 41,562 vs 47,414 NIS (**−12 %**) | −20 % (67 %) | 2.3 / 4.6 / 4.7 | 564 / 663 |
+| 200 generated days, 121 with at-risk flights (`ladder_200.json`) | 41,343 vs 48,063 NIS (**−14 %**) | −17 % (73 %) | 2.9 / 5.2 / 5.2 | 479 / 558 |
+
+By disruption type (200-day run, vs doing nothing): AOG −24 %, fog + AOG −14 %, crew shortage −12 %, fog alone
+−6 % (the engine is worse than waiting on 6 of 29 fog days — the uncertain fog end is the hardest case).
 
 The naive rule is often worse than doing nothing, so "vs doing nothing" is the conservative headline. The
 evaluation futures come from the same simulator (different seed, block-time noise), so this measures search
 quality under uncertainty on synthetic days — not accuracy against real operations.
 
-Engine latency on the medium network (laptop): 1.7 s mean, 3.2 s p95 within a 5 s budget. On slower hosts the
+Engine latency on the medium network (laptop): 1.6 s mean, 3.0 s p95 within a 5 s budget. On slower hosts the
 search reduces sampled futures and depth to stay inside the budget and records what it used in `run.effective`
 and `run.notes`; set `search.deterministic: true` for audit runs where the answer must not depend on the machine.
 

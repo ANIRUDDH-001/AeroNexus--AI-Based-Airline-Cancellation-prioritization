@@ -72,6 +72,18 @@ Set `AERONEXUS_CORS` to include the Vercel origin before starting uvicorn, then 
 with `VITE_API_URL=https://<random>.trycloudflare.com` or run the UI locally (`npm run dev`, which proxies
 `/api` → `:8000` and needs no CORS at all). Quick tunnels need no account; a named tunnel gives a stable URL.
 
+## 4b. Keeping the engine awake
+
+Render sleeps the free service after 15 idle minutes. Three layers cover it:
+
+* `.github/workflows/keepalive.yml` pings `/health` every 10 minutes (GitHub cron is best-effort; set the
+  repository variable `RENDER_API_URL` if the service URL changes). One always-on service fits the 750 free
+  instance-hours a month.
+* For a guaranteed cadence add a free monitor (cron-job.org or UptimeRobot, 5-minute interval) on the same URL.
+* The UI itself shows the engine state in the sidebar (green = online, amber = precomputed demo) with a
+  **Wake engine** button; while on the precomputed bundle it probes the live engine every 15 s and reloads as
+  soon as it answers.
+
 ## 5. Static fallback (what happens if everything is down)
 
 `scripts/precompute_demo.py` writes `data/static-runs/`: the demo day (`instance.json`, entity tables), the
