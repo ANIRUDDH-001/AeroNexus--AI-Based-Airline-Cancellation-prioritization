@@ -2,7 +2,13 @@
 # Storage MUST be Supabase Postgres - the free instance's disk resets on every spin-down.
 # 1. Render dashboard -> New -> Blueprint -> pick this repo.
 # 2. Set AERONEXUS_DB_URL (Supabase pooler URL, postgresql+psycopg://...) and AERONEXUS_CORS (your Vercel URL).
+#    AERONEXUS_CORS must be the browser ORIGIN only - "https://aeronexus-app.vercel.app" - never a path or "#".
+#    (The API normalises a pasted URL, but keep it clean.) Comma-separate several origins.
 # 3. The first request after ~15 min idle takes ~1 min (cold start) - pre-warm before a demo (GET /health).
+# 4. Narration (optional): NARRATION_ENABLED=true + NARRATION_API_KEY. Base URL and model default to Gemini's
+#    OpenAI-compatible endpoint and gemini-3.5-flash-lite; override with NARRATION_BASE_URL / NARRATION_MODEL.
+# 5. AERONEXUS_WRITE_KEY (optional) locks generate/edit/config routes behind the X-AeroNexus-Key header; set the
+#    same value as VITE_API_KEY on Vercel so the UI can still edit. Recommend/what-if/decisions stay open.
 services:
   - type: web
     name: aeronexus-api
@@ -20,8 +26,14 @@ services:
       - key: AERONEXUS_DB_URL
         sync: false            # set in the dashboard; never commit it
       - key: AERONEXUS_CORS
-        value: https://aeronexus.vercel.app
+        value: https://aeronexus-app.vercel.app
       - key: NARRATION_ENABLED
-        value: "false"
+        value: "true"
+      - key: NARRATION_API_KEY
+        sync: false            # Google AI Studio key; set in the dashboard
+      - key: NARRATION_MODEL
+        value: gemini-3.5-flash-lite
+      - key: AERONEXUS_WRITE_KEY
+        sync: false            # optional demo lock; leave empty to allow public edits
       - key: WEB_CONCURRENCY
         value: "1"             # 512 MB instance: one worker, the engine is CPU-bound anyway
