@@ -185,18 +185,22 @@ export function RecommendationsPage() {
     setRun(null);
     setWhatif(null);
     if (!instanceId) return;
+    let active = true;
     api
       .timeline(instanceId, clock)
-      .then(setTl)
-      .catch(() => setTl(null));
+      .then((t) => active && setTl(t))
+      .catch(() => active && setTl(null));
     // static demo mode serves the nearest precomputed run, whose decision time may differ from the slider
     if (lastRunId)
       api
         .run(lastRunId)
         .then((r) => {
-          if (r.decision_time === clock || staticMode.active) setRun(r);
+          if (active && (r.decision_time === clock || staticMode.active)) setRun(r);
         })
         .catch(() => undefined);
+    return () => {
+      active = false;
+    };
   }, [instanceId, clock, lastRunId]);
 
   const recommend = async () => {

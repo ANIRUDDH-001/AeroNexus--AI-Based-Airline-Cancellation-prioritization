@@ -12,10 +12,14 @@ export function OverviewPage({ onNavigate }: { onNavigate: (p: "recommendations"
   useEffect(() => {
     if (!instanceId) return;
     setError(null);
+    let active = true; // ignore late answers for a day that is no longer selected (stale-id race on load)
     api
       .timeline(instanceId, clock)
-      .then(setTl)
-      .catch((e) => setError(String(e)));
+      .then((t) => active && setTl(t))
+      .catch((e) => active && setError(String(e)));
+    return () => {
+      active = false;
+    };
   }, [instanceId, clock]);
 
   if (!instanceId)
