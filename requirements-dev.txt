@@ -1,6 +1,6 @@
 -e packages/core
 -e packages/datagen
--e packages/ml
+-e packages/ml[boost]
 -e apps/api
 pytest>=8
 ruff>=0.6
