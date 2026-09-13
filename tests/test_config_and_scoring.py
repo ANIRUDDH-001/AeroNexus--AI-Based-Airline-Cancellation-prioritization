@@ -85,10 +85,10 @@ def test_compute_nis_breakdown(config: EngineConfig, small_instance):
     m = Metrics(forced_downstream_cancellations=2, pax_cancelled=150, pax_stranded_overnight=10, swaps=1)
     r = compute_nis(m, config)
     assert r.errors == {}
-    assert r.by_term["forced_downstream_cancellations"] == 2 * 5000
-    assert r.by_term["pax_cancelled"] == 150 * 40
-    assert r.by_term["hotel_meal"] == 10 * 3500  # uses the global parameter
-    assert r.by_level["L1"] == 10000
+    assert r.by_term["forced_downstream_cancellations"] == 2 * 2000
+    assert r.by_term["pax_cancelled"] == 150 * 10
+    assert r.by_term["hotel_meal"] == pytest.approx(10 * 3500 * 0.001)  # uses the global parameter, in INR thousand
+    assert r.by_level["L1"] == 4000
     assert r.total == pytest.approx(sum(r.by_term.values()))
     assert "level:L1" in r.breakdown() and "term:swap_cost" in r.breakdown()
 

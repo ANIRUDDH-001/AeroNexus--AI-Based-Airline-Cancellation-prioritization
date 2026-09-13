@@ -60,7 +60,9 @@ def test_delay_propagates_through_turnaround_and_absorbs_slack(config: EngineCon
     # F4: F3 arrives 12:00, +30 -> 12:30 vs STD 12:00 => 30 late (15 more absorbed)
     assert r.legs["F4"].delay_min == 30
     assert r.metrics.buffer_consumed_min == 30
-    assert r.metrics.propagated_delay_min == 60 + 45 + 30
+    # every minute beyond the *known* source delay counts - the imposed 60 on F1 included - so an imposed DELAY
+    # can never launder delay out of the score (Phase 6 case fix)
+    assert r.metrics.propagated_delay_min == 60 + 60 + 45 + 30
     assert r.metrics.delays == 1
 
 
@@ -108,14 +110,24 @@ def test_cancelled_flight_reprotects_with_overflow_stranded(config: EngineConfig
     assert r.metrics.forced_downstream_cancellations == 1
 
 
-def test_curfew_forces_cancellation(config: EngineConfig):
-    inst = tiny_instance()
-    bom = inst.airport("BOM").model_copy(update={"curfew_windows": [TimeWindow(start=700, end=760)]})
-    inst = inst.model_copy(update={"airports": [bom if a.code == "BOM" else a for a in inst.airports]})
-    # F3 scheduled arr 11:15 (675) fine; delaying F3 by 30 -> arr 11:45 (705) inside curfew -> forced cancel
+def _with_bom_curfew(inst, start: int, end: int):
+    bom = inst.airport("BOM").model_copy(update={"curfew_windows": [TimeWindow(start=start, end=end)]})
+    return inst.model_copy(update={"airports": [bom if a.code == "BOM" else a for a in inst.airports]})
+
+
+def test_curfew_ground_holds_then_forces_cancellation(config: EngineConfig):
+    # F3 scheduled arr 11:15 (675). Delaying it by 30 -> arr 11:45 (705) inside a 11:40-12:40 curfew: the
+    # aircraft waits on the ground at DEL (ATC ground-delay behaviour) and departs so as to arrive at curfew end.
+    inst = _with_bom_curfew(tiny_instance(), 700, 760)
     r = run(inst, config, Decisions(delays={"F3": 30}))
-    assert r.legs["F3"].status == "CANCELLED_FORCED" and "curfew" in r.legs["F3"].reason
-    assert r.legs["F4"].status == "CANCELLED_FORCED"  # aircraft never reached BOM
+    assert r.legs["F3"].operated and r.legs["F3"].arr == 760 and r.legs["F3"].delay_min == 85
+    assert r.legs["F4"].operated
+    # a curfew so long that the ground hold exceeds the cancellation cap (300 min) forces the cancellation,
+    # and the reason names the curfew
+    inst2 = _with_bom_curfew(tiny_instance(), 700, 1000)
+    r2 = run(inst2, config, Decisions(delays={"F3": 30}))
+    assert r2.legs["F3"].status == "CANCELLED_FORCED" and "curfew" in r2.legs["F3"].reason
+    assert r2.legs["F4"].status == "CANCELLED_FORCED"  # aircraft never reached BOM
 
 
 def test_fdp_breach_uses_standby_then_forces_when_none(config: EngineConfig):
