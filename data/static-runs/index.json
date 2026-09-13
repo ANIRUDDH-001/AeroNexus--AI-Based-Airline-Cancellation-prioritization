@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-11T18:29:25+00:00",
+ "generated_at": "2026-09-13T09:44:11+00:00",
  "engine_version": "0.1.0",
  "config_hash": "8ad297501ff2a755",
  "decision_times": [
@@ -15,7 +15,7 @@
   "name": "synthetic-medium-seed1",
   "size": "medium",
   "seed": 1,
-  "created_at": "2026-09-11T18:29:25+00:00",
+  "created_at": "2026-09-13T09:44:11+00:00",
   "summary": {
    "name": "synthetic-medium-seed1",
    "size": "medium",
@@ -24,128 +24,128 @@
    "airports": 12,
    "hubs": 4,
    "aircraft": 40,
-   "flights": 259,
-   "crews": 129,
+   "flights": 253,
+   "crews": 132,
    "standby_crews": 13,
-   "itineraries": 539,
-   "booked_pax": 38213,
-   "connecting_pax": 4308,
+   "itineraries": 523,
+   "booked_pax": 37709,
+   "connecting_pax": 4311,
    "disruptions": 2
   }
  },
  "runs": [
   {
-   "id": "4d8e4e14fda6",
-   "created_at": "2026-09-11T18:29:04+00:00",
+   "id": "d3a9a4212121",
+   "created_at": "2026-09-13T09:43:52+00:00",
    "instance_id": "static-demo",
    "decision_time": 300,
    "config_hash": "8ad297501ff2a755",
    "engine_version": "0.1.0",
    "accepted_plan": null,
    "override_reason": null,
-   "latency_ms": 4002.4,
+   "latency_ms": 3409.8,
    "top_plan": [
-    "Swap 6E2022 DEL\u2192BOM onto VT-IBH",
-    "Cancel 3 legs BLR\u2192DEL\u2192BLR\u2192DEL (6E2019, 6E2020, 6E2021)"
+    "Cancel cycle GAY\u2192DEL\u2026\u2192DEL (6E2077, 6E2078, 6E2079)",
+    "Cancel cycle BLR\u2192DEL\u2026\u2192BLR (6E2019, 6E2020)",
+    "Cancel cycle DEL\u2192DED\u2026\u2192DEL (6E2244, 6E2245)"
    ],
-   "top_nis": 64399.63718754152,
-   "at_risk": 54,
-   "plans_evaluated": 128
+   "top_nis": 113093.66809359587,
+   "at_risk": 42,
+   "plans_evaluated": 115
   },
   {
-   "id": "bea58a0323b3",
-   "created_at": "2026-09-11T18:29:08+00:00",
+   "id": "d5b39fd2e10d",
+   "created_at": "2026-09-13T09:43:56+00:00",
    "instance_id": "static-demo",
    "decision_time": 360,
    "config_hash": "8ad297501ff2a755",
    "engine_version": "0.1.0",
    "accepted_plan": null,
    "override_reason": null,
-   "latency_ms": 3940.9,
+   "latency_ms": 3354.0,
    "top_plan": [
-    "Swap 6E2022 DEL\u2192BOM onto VT-IBH",
-    "Cancel cycle DEL\u2192BLR\u2026\u2192DEL (6E2020, 6E2021)",
-    "Cancel cycle HYD\u2192BLR\u2026\u2192DEL (6E2018, 6E2019)"
+    "Cancel cycle GAY\u2192DEL\u2026\u2192DEL (6E2077, 6E2078, 6E2079)",
+    "Cancel 3 legs HYD\u2192BLR\u2192DEL\u2192BLR (6E2018, 6E2019, 6E2020)"
    ],
-   "top_nis": 67212.43498589084,
-   "at_risk": 57,
-   "plans_evaluated": 126
+   "top_nis": 132854.04102131817,
+   "at_risk": 42,
+   "plans_evaluated": 117
   },
   {
-   "id": "43b25477f909",
-   "created_at": "2026-09-11T18:29:12+00:00",
+   "id": "a7f28816fa95",
+   "created_at": "2026-09-13T09:43:59+00:00",
    "instance_id": "static-demo",
    "decision_time": 420,
    "config_hash": "8ad297501ff2a755",
    "engine_version": "0.1.0",
    "accepted_plan": null,
    "override_reason": null,
-   "latency_ms": 3861.0,
+   "latency_ms": 3270.3,
    "top_plan": [
-    "Swap 6E2022 DEL\u2192BOM onto VT-IAG",
-    "Cancel cycle COK\u2192DEL\u2026\u2192DEL (6E2133, 6E2134, 6E2135, 6E2136)",
-    "Cancel cycle BLR\u2192DEL\u2026\u2192BLR (6E2019, 6E2020)"
+    "Cancel cycle GAY\u2192DEL\u2026\u2192DEL (6E2077, 6E2078, 6E2079)",
+    "Cancel cycle DEL\u2192BLR\u2026\u2192DEL (6E2020, 6E2021)",
+    "Cancel cycle DEL\u2192DED\u2026\u2192DEL (6E2244, 6E2245)"
    ],
-   "top_nis": 123659.91070170955,
-   "at_risk": 55,
-   "plans_evaluated": 121
+   "top_nis": 113093.66809359587,
+   "at_risk": 41,
+   "plans_evaluated": 118
   },
   {
-   "id": "3eea133aba51",
-   "created_at": "2026-09-11T18:29:16+00:00",
+   "id": "78467dfb9c4e",
+   "created_at": "2026-09-13T09:44:03+00:00",
    "instance_id": "static-demo",
    "decision_time": 480,
    "config_hash": "8ad297501ff2a755",
    "engine_version": "0.1.0",
    "accepted_plan": null,
    "override_reason": null,
-   "latency_ms": 3864.2,
+   "latency_ms": 3538.3,
    "top_plan": [
-    "Swap 6E2022 DEL\u2192BOM onto VT-IAG",
-    "Cancel cycle COK\u2192DEL\u2026\u2192DEL (6E2133, 6E2134, 6E2135, 6E2136)",
-    "Cancel cycle BLR\u2192DEL\u2026\u2192BLR (6E2019, 6E2020)"
+    "Cancel cycle DED\u2192DEL\u2026\u2192DEL (6E2079, 6E2080, 6E2081)",
+    "Cancel cycle DEL\u2192BLR\u2026\u2192DEL (6E2020, 6E2021)",
+    "Cancel cycle DEL\u2192DED\u2026\u2192DEL (6E2244, 6E2245)"
    ],
-   "top_nis": 122479.97997275158,
-   "at_risk": 54,
-   "plans_evaluated": 124
+   "top_nis": 110019.14982990132,
+   "at_risk": 41,
+   "plans_evaluated": 120
   },
   {
-   "id": "7f7d08b5cb45",
-   "created_at": "2026-09-11T18:29:20+00:00",
+   "id": "84957900719b",
+   "created_at": "2026-09-13T09:44:06+00:00",
    "instance_id": "static-demo",
    "decision_time": 540,
    "config_hash": "8ad297501ff2a755",
    "engine_version": "0.1.0",
    "accepted_plan": null,
    "override_reason": null,
-   "latency_ms": 3617.9,
+   "latency_ms": 3255.0,
    "top_plan": [
-    "Swap 6E2022 DEL\u2192BOM onto VT-IAG",
-    "Cancel cycle COK\u2192DEL\u2026\u2192DEL (6E2133, 6E2134, 6E2135, 6E2136)",
-    "Cancel cycle BLR\u2192DEL\u2026\u2192BLR (6E2019, 6E2020)"
+    "Cancel cycle DED\u2192DEL\u2026\u2192DEL (6E2079, 6E2080, 6E2081)",
+    "Cancel cycle DEL\u2192BLR\u2026\u2192DEL (6E2020, 6E2021)",
+    "Cancel cycle DEL\u2192DED\u2026\u2192DEL (6E2244, 6E2245)"
    ],
-   "top_nis": 122479.97997275158,
-   "at_risk": 48,
-   "plans_evaluated": 122
+   "top_nis": 110019.14982990132,
+   "at_risk": 41,
+   "plans_evaluated": 118
   },
   {
-   "id": "65d5d079bab4",
-   "created_at": "2026-09-11T18:29:24+00:00",
+   "id": "d49a28aed8a2",
+   "created_at": "2026-09-13T09:44:09+00:00",
    "instance_id": "static-demo",
    "decision_time": 600,
    "config_hash": "8ad297501ff2a755",
    "engine_version": "0.1.0",
    "accepted_plan": null,
    "override_reason": null,
-   "latency_ms": 3714.7,
+   "latency_ms": 3115.1,
    "top_plan": [
-    "Swap 6E2022 DEL\u2192BOM onto VT-IAG",
-    "Cancel cycle COK\u2192DEL\u2026\u2192DEL (6E2133, 6E2134, 6E2135, 6E2136)",
-    "Cancel cycle DEL\u2192BLR\u2026\u2192DEL (6E2020, 6E2021)"
+    "Cancel cycle DED\u2192DEL\u2026\u2192DEL (6E2079, 6E2080, 6E2081)",
+    "Cancel cycle BLR\u2192DEL\u2026\u2192BOM (6E2021, 6E2022)",
+    "Cancel cycle BLR\u2192DEL\u2026\u2192BLR (6E2019, 6E2020)"
    ],
-   "top_nis": 122479.97997275158,
-   "at_risk": 44,
-   "plans_evaluated": 122
+   "top_nis": 103343.79371726606,
+   "at_risk": 36,
+   "plans_evaluated": 114
   }
  ],
  "files": [
@@ -154,6 +154,7 @@
   "cases.json",
   "config.json",
   "instance.json",
+  "metrics.json",
   "run_300.json",
   "run_360.json",
   "run_420.json",
