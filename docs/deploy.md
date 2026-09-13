@@ -23,13 +23,33 @@ Everything below is free tier. Three layers, each replaceable:
 1. Push the repo to GitHub (branch `main`).
 2. Render → *New* → *Blueprint* → select the repo. Render reads `render.yaml`.
 3. In the service's *Environment* tab set `AERONEXUS_DB_URL` (the Supabase URL above) and `AERONEXUS_CORS`
-   (your Vercel URL, comma-separated if several). Never put the password in the repo.
+   (your Vercel **origin**, comma-separated if several). Never put the password in the repo.
+
+   > **CORS gotcha (this is what broke the first deployment).** Browsers send `Origin: https://aeronexus-app.vercel.app`
+   > — scheme and host only — and the match is exact. A value such as `https://aeronexus-app.vercel.app/#` never
+   > matches, every preflight (`OPTIONS …`) returns `400 Bad Request`, and the UI falls back to the precomputed
+   > bundle. The API now normalises pasted values, but keep the variable clean. Verify with
+   > `curl -sI -H "Origin: https://aeronexus-app.vercel.app" https://<service>.onrender.com/health | grep -i access-control`
+   > — the `access-control-allow-origin` header must come back.
+
+   Optional: `NARRATION_ENABLED=true` + `NARRATION_API_KEY` (Google AI Studio key; the base URL and model default
+   to Gemini's OpenAI-compatible endpoint and `gemini-3.5-flash-lite`), and `AERONEXUS_WRITE_KEY` to lock the
+   generate/edit/config routes (then set `VITE_API_KEY` on Vercel to the same value). `/health` reports the
+   effective narration mode and whether a write key is required.
+
+   **Secrets hygiene:** never screenshot the Environment page with values revealed; if a DB password or API key
+   has been shown anywhere, rotate it (Supabase → Settings → Database → *Reset database password*; Google AI
+   Studio → delete and re-create the key) and update the variable.
 4. Deploy. Health check: `https://<service>.onrender.com/health` → `{"status":"ok", ...}`.
 5. The surrogate model (`packages/ml/models/surrogate.joblib`, 1.2 MB) ships with the repo and is loaded at
    startup; if LightGBM is missing the API silently falls back to heuristic pre-rank.
 
 Limits to remember: 750 instance-hours/month, **15-min idle spin-down, ~60 s cold start**, 512 MB RAM
-(one worker). Hit `/health` a few minutes before presenting.
+(one worker) and roughly **4× slower CPU than a laptop**: a medium-day recommendation takes 6–10 s there and the
+engine reduces sampled futures and depth to stay inside the latency budget (every run says so in its notes and
+`effective` block; the UI shows "uncertainty not evaluated" when fewer than three futures fitted). For a live
+pitch, prefer the laptop + Cloudflare Tunnel (section 4) or raise `latency_budget_ms` in Search settings.
+Hit `/health` a few minutes before presenting.
 
 Local Docker equivalent (same image Render would build): `docker build -f apps/api/Dockerfile -t aeronexus-api . && docker run -p 8000:8000 aeronexus-api`.
 
@@ -58,13 +78,13 @@ with `VITE_API_URL=https://<random>.trycloudflare.com` or run the UI locally (`n
 baseline timeline and a full recommendation at 05:00, 06:00, 07:00, 08:00, 09:00 and 10:00, the case-suite
 result, the benchmark ladder and the configuration snapshot. The web client (`apps/web/src/lib/api.ts`)
 switches to this bundle automatically when the API returns a network error or a 502/503/504, shows
-**"Static demo mode (API unreachable)"** in the sidebar, and serves the nearest precomputed decision time.
+**"Precomputed demo (engine not reachable)"** in the sidebar, and serves the nearest precomputed decision time.
 Edits, what-if and re-runs need the live engine and fail with a clear 503 message.
 
 ## 6. Pre-demo checklist
 
-- [ ] Supabase project un-paused; `GET /health` on Render returns 200 (warm).
+- [ ] Supabase project un-paused; `GET /health` on Render returns 200 (warm) **and** the CORS check above passes.
+- [ ] A demo day exists on the hosted DB (Data page → medium, seed 1, `fog:DEL:300:240:0.5, aog:VT-IAD:520`) — the DB starts empty.
 - [ ] `python -m pytest -q` green; `data/benchmarks/latest.json` and `data/static-runs/` regenerated on the current `config_hash`.
-- [ ] The demo day exists in the hosted DB (Data page → generate `medium`, seed 1, `fog:DEL` + `aog:<tail>`).
 - [ ] Laptop fallback rehearsed: `uvicorn` + `npm run dev`, and the static bundle with the API stopped.
 - [ ] Values marked VERIFY in `configs/parameters.yaml` (FDTL table, DGCA compensation) checked against the current CAR.

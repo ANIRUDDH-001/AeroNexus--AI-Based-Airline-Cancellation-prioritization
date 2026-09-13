@@ -97,9 +97,9 @@ cycle, not the leg; tonight's choice vs tomorrow's first wave; thin vs trunk rou
 the binding constraint; a crew-shortage day. Cases assert the top-1 plan, flights that must survive, actions
 that must be *excluded by a named constraint*, and metric bounds.
 
-**Benchmark ladder.** Every policy's chosen plan is scored on a *separate* evaluation simulator (different
-random seed, block-time noise the search never sees, 40 futures per plan), so the engine cannot grade its
-own homework.
+**Benchmark ladder.** Every policy's chosen plan is scored on *held-out futures*: the same simulator with a
+different random seed and ±5 % block-time noise the search never saw, 40 futures per plan. This guards
+against fitting the sampled futures; it does not measure model error against real operations.
 
 | Policy | Mean NIS | vs B0 | Win rate vs B0 | Forced cancels | Pax stranded | Latency |
 |---|---|---|---|---|---|---|
@@ -109,14 +109,16 @@ own homework.
 | **B2 AeroNexus** | **44,537** | **−26.4 %** | **83 %** | **2.08** | **550** | 1.7 s / p95 3.2 s |
 | B2s AeroNexus + surrogate pre-rank | 45,921 | −24.1 % | 83 % | 2.07 | 583 | 1.8 s / p95 3.4 s |
 
-30 generated scenarios (small/medium networks; fog, capacity, AOG, crew, ATC, mixed), `data/benchmarks/latest.json`.
-The naive rule is *worse than doing nothing*: cancelling the lightest at-risk flight often removes an
-aircraft the network still needed. The engine's gain comes mostly from fewer forced downstream cancellations
-(2.1 vs 5.6) and fewer stranded passengers.
+30 generated days (18 with at-risk flights; small/medium networks; fog, capacity, AOG, crew, ATC, mixed),
+`data/benchmarks/latest.json`. The naive rule is *worse than doing nothing*: cancelling the lightest at-risk
+flight often removes an aircraft the network still needed — so the conservative headline is **−18.7 % versus
+doing nothing** (44,537 vs 54,780), with −26.4 % versus B0 as context. The engine's gain comes mostly from fewer
+forced downstream cancellations (2.1 vs 5.2 doing nothing) and fewer stranded passengers (550 vs 650).
 
 The same protocol on **200 generated scenarios** (124 with at-risk flights, `data/benchmarks/ladder_200.json`)
-gives a more conservative picture, which we report as the headline: **AeroNexus −16.3 % NIS vs B0, win rate
-82 %, forced downstream cancellations 4.1 vs 6.9, stranded 650 vs 780** (do nothing −3.3 %, B1 −1.8 %).
+gives a more conservative picture, which we report as the headline: **AeroNexus −13.5 % NIS vs doing nothing
+(59,339 vs 68,585) and −16.3 % vs B0, win rate 82 %, forced downstream cancellations 4.1 vs 6.9, stranded 650
+vs 780** (B1 −1.8 % vs B0).
 By disruption type the gain is largest for AOG (−30 %) and crew shortage (−19 %) and smallest for fog (−11 %):
 with a lognormal fog end (σ = 0.5) the engine's plan is worse than waiting in 6 of 30 fog days — the price of
 deciding on ten sampled futures when the evaluation draws forty. Raising `S` narrows that gap at the cost of

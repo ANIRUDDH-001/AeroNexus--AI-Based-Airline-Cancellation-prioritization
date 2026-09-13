@@ -47,12 +47,18 @@ capacity cut, ATC flow). No real IndiGo data is used.
 Benchmark ladder, scored on a separate evaluation simulator (different seed, block-time noise the search
 never sees, 40 futures per plan):
 
-| Run | AeroNexus vs naive B0 | Win rate | Forced cancellations | Stranded pax |
+| Run | AeroNexus vs doing nothing | vs naive rule B0 (win rate) | Forced cancellations (B2 / do nothing / B0) | Stranded pax (B2 / B0) |
 |---|---|---|---|---|
-| 30 scenarios (`data/benchmarks/latest.json`) | 44,537 vs 60,536 NIS (**−26 %**) | 83 % | 2.1 vs 5.6 | 550 vs 734 |
-| 200 scenarios, 124 with at-risk flights (`ladder_200.json`) | 59,339 vs 70,903 NIS (**−16 %**) | 82 % | 4.1 vs 6.9 | 650 vs 780 |
+| 30 generated days, 18 with at-risk flights (`data/benchmarks/latest.json`) | 44,537 vs 54,780 NIS (**−19 %**) | −26 % (83 %) | 2.1 / 5.2 / 5.6 | 550 / 734 |
+| 200 generated days, 124 with at-risk flights (`ladder_200.json`) | 59,339 vs 68,585 NIS (**−13 %**) | −16 % (82 %) | 4.1 / 6.9 / 6.9 | 650 / 780 |
 
-Engine latency on the medium network: 1.7 s mean, 3.2 s p95 (5 s budget; degrades gracefully by reducing samples and depth).
+The naive rule is often worse than doing nothing, so "vs doing nothing" is the conservative headline. The
+evaluation futures come from the same simulator (different seed, block-time noise), so this measures search
+quality under uncertainty on synthetic days — not accuracy against real operations.
+
+Engine latency on the medium network (laptop): 1.7 s mean, 3.2 s p95 within a 5 s budget. On slower hosts the
+search reduces sampled futures and depth to stay inside the budget and records what it used in `run.effective`
+and `run.notes`; set `search.deterministic: true` for audit runs where the answer must not depend on the machine.
 
 ## Quick start
 
@@ -80,8 +86,10 @@ python -m aeronexus_ml.surrogate evaluate                               # held-o
 python scripts/precompute_demo.py                                       # offline demo bundle -> data/static-runs/
 ```
 
-Same instance + same `config_hash` + same seed ⇒ identical output. Every run stored by the API carries the
-hash, the engine version, the inputs and the controller's decision.
+Same day + same `config_hash` + same seed ⇒ identical output **when the search is not cut by the latency
+budget** (use `search.deterministic: true` to guarantee it). Every run stored by the API carries the config
+hash, a content hash of the day it saw (`instance_hash` — editing the day changes it), the effective samples
+and depth, the engine version and the controller's decision.
 
 ## Conventions
 
@@ -111,7 +119,11 @@ tests/          pytest suite               render.yaml     Render blueprint (API
 |---|---|---|
 | `AERONEXUS_DB_URL` | `sqlite:///<repo>/aeronexus.db` | Storage; set to the Supabase Postgres URL for the hosted demo |
 | `AERONEXUS_CONFIG_DIR` | `<repo>/configs` | YAML registries seeded into the DB on first start |
-| `AERONEXUS_CORS` | localhost dev origins | Allowed origins for the hosted UI |
+| `AERONEXUS_CORS` | localhost dev origins | Allowed browser origins (`scheme://host`, no path/`#`; normalised) |
 | `AERONEXUS_SURROGATE_PATH` | `packages/ml/models/surrogate.joblib` | Pre-ranker model; absent ⇒ heuristic pre-rank |
+| `AERONEXUS_CORS_REGEX` | unset | Optional regex for extra origins (Vercel previews) |
+| `AERONEXUS_WRITE_KEY` | unset | When set, generate/edit/config routes need header `X-AeroNexus-Key` |
 | `NARRATION_ENABLED` | `false` | LLM narration feature flag (Plan §14.1) |
+| `NARRATION_API_KEY` / `NARRATION_BASE_URL` / `NARRATION_MODEL` | key unset; Gemini OpenAI-compatible endpoint; `gemini-3.5-flash-lite` | Narration provider (any OpenAI-compatible chat endpoint; use a non-reasoning model) |
 | `VITE_API_URL` (web) | unset → `/api` proxy | Production API origin |
+| `VITE_API_KEY` (web) | unset | Mirrors `AERONEXUS_WRITE_KEY` when the API is locked |
