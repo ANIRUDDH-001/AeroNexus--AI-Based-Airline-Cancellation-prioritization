@@ -1,7 +1,7 @@
 """Configuration registries (Plan §15, §19). Every PUT bumps the version and recomputes config_hash."""
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ValidationError
 
 from aeronexus_core.config import (
@@ -17,8 +17,10 @@ from aeronexus_core.constraints import available_plugins
 from aeronexus_core.scoring import Metrics, validate_terms
 
 from .. import settings, storage
+from ..auth import require_write_key
 
 router = APIRouter(prefix="/config", tags=["config"])
+write = APIRouter(prefix="/config", tags=["config"], dependencies=[Depends(require_write_key)])
 
 
 class ConfigEnvelope(BaseModel):
@@ -67,25 +69,25 @@ def _replace(cfg: EngineConfig, **fields) -> ConfigEnvelope:
     return _envelope(new, row)
 
 
-@router.put("/terms", response_model=ConfigEnvelope)
+@write.put("/terms", response_model=ConfigEnvelope)
 def put_terms(terms: list[ObjectiveTerm]) -> ConfigEnvelope:
     cfg, _ = storage.get_config()
     return _replace(cfg, objective_terms=terms)
 
 
-@router.put("/constraints", response_model=ConfigEnvelope)
+@write.put("/constraints", response_model=ConfigEnvelope)
 def put_constraints(constraints: list[ConstraintDef]) -> ConfigEnvelope:
     cfg, _ = storage.get_config()
     return _replace(cfg, constraints=constraints)
 
 
-@router.put("/parameters", response_model=ConfigEnvelope)
+@write.put("/parameters", response_model=ConfigEnvelope)
 def put_parameters(parameters: list[ParameterDef]) -> ConfigEnvelope:
     cfg, _ = storage.get_config()
     return _replace(cfg, parameters=parameters)
 
 
-@router.put("/search", response_model=ConfigEnvelope)
+@write.put("/search", response_model=ConfigEnvelope)
 def put_search(search: SearchSettings) -> ConfigEnvelope:
     cfg, _ = storage.get_config()
     return _replace(cfg, search=search)
@@ -116,7 +118,7 @@ def validate(req: ValidateRequest) -> dict:
     return out
 
 
-@router.post("/presets/{name}", response_model=ConfigEnvelope)
+@write.post("/presets/{name}", response_model=ConfigEnvelope)
 def save_preset(name: str) -> ConfigEnvelope:
     cfg, _ = storage.get_config()
     row = storage.put_config(cfg.model_copy(update={"preset_name": name}), cid=name)
@@ -128,7 +130,7 @@ def presets() -> list[dict]:
     return storage.list_presets()
 
 
-@router.post("/presets/{name}/load", response_model=ConfigEnvelope)
+@write.post("/presets/{name}/load", response_model=ConfigEnvelope)
 def load_preset(name: str) -> ConfigEnvelope:
     try:
         cfg, _ = storage.get_config(name)
@@ -138,7 +140,7 @@ def load_preset(name: str) -> ConfigEnvelope:
     return _envelope(cfg, row)
 
 
-@router.post("/reset", response_model=ConfigEnvelope)
+@write.post("/reset", response_model=ConfigEnvelope)
 def reset_from_yaml() -> ConfigEnvelope:
     """Reload the YAML registries from disk (developer convenience)."""
     cfg = load_config(settings.CONFIG_DIR)

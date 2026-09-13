@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 import numpy as np
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, ValidationError
 
 from aeronexus_core.config import ParameterDef
@@ -15,8 +15,10 @@ from aeronexus_core.validate import validate_instance
 from aeronexus_datagen.disruptions import inject, parse_spec
 
 from .. import storage
+from ..auth import require_write_key
 
 router = APIRouter(prefix="/data/instances/{iid}", tags=["edit"])
+write = APIRouter(prefix="/data/instances/{iid}", tags=["edit"], dependencies=[Depends(require_write_key)])
 
 Entity = Literal["flights", "aircraft", "crews", "airports", "itineraries"]
 _KEY = {"flights": "id", "aircraft": "tail", "crews": "id", "airports": "code", "itineraries": "id"}
@@ -63,7 +65,7 @@ class PatchRequest(BaseModel):
     remove_attributes: list[str] = Field(default_factory=list)
 
 
-@router.patch("/{entity}/{key}")
+@write.patch("/{entity}/{key}")
 def patch_row(iid: str, entity: Entity, key: str, req: PatchRequest) -> dict:
     inst = _load(iid)
     rows = list(getattr(inst, entity))
@@ -93,7 +95,7 @@ class ColumnRequest(BaseModel):
     description: str = ""
 
 
-@router.post("/columns")
+@write.post("/columns")
 def add_column(iid: str, req: ColumnRequest) -> dict:
     """The §15.2 flow: add a column -> every row gets the default in ``attributes`` -> a parameter is
     registered (scope = entity) so score terms and rules can reference it immediately."""
@@ -116,7 +118,7 @@ class DisruptionRequest(BaseModel):
     disruption: Disruption | None = None
 
 
-@router.post("/disruptions")
+@write.post("/disruptions")
 def add_disruption(iid: str, req: DisruptionRequest) -> dict:
     inst = _load(iid)
     if req.disruption is not None:
@@ -133,7 +135,7 @@ def add_disruption(iid: str, req: DisruptionRequest) -> dict:
     return _store(iid, inject(inst, d))
 
 
-@router.delete("/disruptions/{did}")
+@write.delete("/disruptions/{did}")
 def remove_disruption(iid: str, did: str) -> dict:
     inst = _load(iid)
     keep = [d for d in inst.disruptions if d.id != did]

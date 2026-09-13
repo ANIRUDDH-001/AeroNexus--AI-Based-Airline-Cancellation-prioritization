@@ -6,9 +6,10 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from aeronexus_core.model import Action, Run, State, fmt_time
+from aeronexus_core.model import Action, Instance, Run, State, fmt_time
 from aeronexus_core.search import detect_at_risk, recommend
 from aeronexus_core.simulator import Simulator
+from aeronexus_core.validate import validate_instance
 
 from .. import settings, storage
 from ..narration import narrate
@@ -59,21 +60,49 @@ def _previous_top_key(run_id: str | None, instance_id: str, clock: int) -> str |
     return st.decisions.key()
 
 
+def _check_actions(inst: Instance, actions: list[Action]) -> None:
+    """Reject references the engine cannot resolve (unknown flights / tails) with a 422 instead of a 500."""
+    problems = []
+    for a in actions:
+        if not a.target_flights:
+            problems.append(f"{a.type}: no target flight")
+        for fid in a.target_flights:
+            if fid not in inst.flights_by_id:
+                problems.append(f"{a.type}: unknown flight {fid}")
+        if a.type == "SWAP" and a.params.get("swap_tail") not in inst.aircraft_by_tail:
+            problems.append(f"SWAP {'+'.join(a.target_flights)}: unknown aircraft {a.params.get('swap_tail')}")
+        if a.type == "DELAY" and not isinstance(a.params.get("delay_min"), int | float):
+            problems.append(f"DELAY {'+'.join(a.target_flights)}: delay_min missing")
+    if problems:
+        raise HTTPException(status_code=422, detail={"reason": "invalid actions", "problems": problems})
+
+
+def _finish(run: Run, inst: Instance, instance_id: str) -> Run:
+    run.instance_hash = inst.content_hash()
+    issues = validate_instance(inst)
+    if issues:
+        run.notes.append(f"instance has {len(issues)} validation issue(s); results may be unreliable: "
+                         + "; ".join(issues[:3]))
+    if settings.NARRATION_ENABLED and run.plans:
+        run.narrative = narrate(run)
+    storage.save_run(run, instance_id)
+    return run
+
+
 @router.post("/recommend", response_model=Run)
 def post_recommend(req: RecommendRequest) -> Run:
     inst = storage.get_instance(req.instance_id)
     if inst is None:
         raise HTTPException(status_code=404, detail="instance not found")
+    for plan in req.whatif:
+        _check_actions(inst, plan)
     cfg, _ = storage.get_config()
     run = recommend(
         inst, cfg, clock=req.decision_time, seed=req.seed,
         previous_top_key=_previous_top_key(req.previous_run_id, req.instance_id, req.decision_time),
         extra_plans=req.whatif or None, surrogate=surrogate(),
     )
-    if settings.NARRATION_ENABLED and run.plans:
-        run.narrative = narrate(run)
-    storage.save_run(run, req.instance_id)
-    return run
+    return _finish(run, inst, req.instance_id)
 
 
 class WhatIfRequest(BaseModel):
@@ -89,14 +118,14 @@ def post_whatif(req: WhatIfRequest) -> Run:
     inst = storage.get_instance(req.instance_id)
     if inst is None:
         raise HTTPException(status_code=404, detail="instance not found")
+    _check_actions(inst, req.actions)
     cfg, _ = storage.get_config()
     run = recommend(inst, cfg, clock=req.decision_time, seed=req.seed, extra_plans=[req.actions], surrogate=surrogate())
     run.notes.append("what-if evaluation")
     if not run.whatif:
         raise HTTPException(status_code=422, detail={"reason": "what-if plan infeasible",
                                                     "actions": [a.model_dump() for a in req.actions]})
-    storage.save_run(run, req.instance_id)
-    return run
+    return _finish(run, inst, req.instance_id)
 
 
 @router.get("/timeline")
@@ -166,7 +195,13 @@ class DecisionRequest(BaseModel):
 
 @router.post("/runs/{run_id}/decision", response_model=Run)
 def decide(run_id: str, req: DecisionRequest) -> Run:
-    run = storage.decide_run(run_id, req.accepted_plan, req.override_reason)
-    if run is None:
+    got = storage.get_run(run_id)
+    if got is None:
         raise HTTPException(status_code=404, detail="run not found")
+    if req.accepted_plan is not None and req.accepted_plan > len(got[0].plans):
+        raise HTTPException(status_code=422, detail=f"run has {len(got[0].plans)} plan(s); cannot accept #{req.accepted_plan}")
+    if req.accepted_plan is None and not (req.override_reason or "").strip():
+        raise HTTPException(status_code=422, detail="an override needs a reason")
+    run = storage.decide_run(run_id, req.accepted_plan, req.override_reason)
+    assert run is not None
     return run

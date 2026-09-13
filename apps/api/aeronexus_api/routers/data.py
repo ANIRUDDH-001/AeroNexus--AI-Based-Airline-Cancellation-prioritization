@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Literal
 
 import numpy as np
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from aeronexus_core.model import Instance, State
@@ -13,8 +13,10 @@ from aeronexus_datagen import GeneratorParams, generate
 from aeronexus_datagen.disruptions import inject, parse_spec
 
 from .. import storage
+from ..auth import require_write_key
 
 router = APIRouter(tags=["data"])
+write = APIRouter(tags=["data"], dependencies=[Depends(require_write_key)])
 
 
 class GenerateRequest(BaseModel):
@@ -30,7 +32,7 @@ class InstanceCreated(BaseModel):
     issues: list[str]
 
 
-@router.post("/data/generate", response_model=InstanceCreated)
+@write.post("/data/generate", response_model=InstanceCreated)
 def generate_instance(req: GenerateRequest) -> InstanceCreated:
     try:
         params = GeneratorParams.for_size(req.size, req.seed, **req.overrides)
@@ -48,7 +50,7 @@ def generate_instance(req: GenerateRequest) -> InstanceCreated:
     return InstanceCreated(id=iid, summary=inst.summary(), issues=issues)
 
 
-@router.post("/data/import", response_model=InstanceCreated)
+@write.post("/data/import", response_model=InstanceCreated)
 def import_instance(inst: Instance) -> InstanceCreated:
     """Import a full instance JSON (the generator's format; also the target for CSV import in Phase 4)."""
     issues = validate_instance(inst)
@@ -79,7 +81,7 @@ def get_summary(iid: str) -> dict:
     return inst.summary()
 
 
-@router.delete("/data/instances/{iid}")
+@write.delete("/data/instances/{iid}")
 def delete_instance(iid: str) -> dict:
     if not storage.delete_instance(iid):
         raise HTTPException(status_code=404, detail="instance not found")

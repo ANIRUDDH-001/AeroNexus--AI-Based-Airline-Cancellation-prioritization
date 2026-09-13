@@ -140,6 +140,7 @@ def delete_instance(iid: str) -> bool:
             return False
         for run in s.exec(select(RunRow).where(RunRow.instance_id == iid)).all():
             s.delete(run)
+        s.flush()  # runs first; Postgres also cascades, and the flush order otherwise trips a 0-rows warning
         s.delete(r)
         s.commit()
         return True
@@ -207,6 +208,7 @@ def list_runs(instance_id: str | None = None, limit: int = 50) -> list[dict]:
                 "override_reason": r.override_reason, "latency_ms": p.get("latency_ms"),
                 "top_plan": (top["explanation"]["actions"] if top else []), "top_nis": (top["nis"] if top else None),
                 "at_risk": len(p.get("at_risk", [])), "plans_evaluated": p.get("plans_evaluated"),
+                "instance_hash": p.get("instance_hash"), "effective": p.get("effective", {}),
             })
         return out
 
