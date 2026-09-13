@@ -56,14 +56,14 @@ export function RunsPage() {
                   <td className="font-mono">{fmt(r.top_nis)}</td>
                   <td>{r.at_risk}</td>
                   <td>
-                  {r.plans_evaluated ?? "—"}
-                  {r.effective?.samples != null && <span className="text-ink-2"> · S={r.effective.samples}</span>}
-                </td>
+                    {r.plans_evaluated ?? "—"}
+                    {r.effective?.samples != null && <span className="text-ink-2"> · S={r.effective.samples}</span>}
+                  </td>
                   <td className="font-mono">{fmt(r.latency_ms)} ms</td>
                   <td className="font-mono text-[12px]">
-                  {r.config_hash}
-                  {r.instance_hash && <div className="text-ink-2">day {r.instance_hash}</div>}
-                </td>
+                    {r.config_hash}
+                    {r.instance_hash && <div className="text-ink-2">day {r.instance_hash}</div>}
+                  </td>
                   <td>
                     {r.accepted_plan == null ? (
                       <Tag tone="gray">pending</Tag>

@@ -53,7 +53,11 @@ export function Shell({ page, onNavigate, status, children }: { page: PageKey; o
           <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur border-b border-border px-6 py-2 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px]">
             <label className="flex items-center gap-2 text-ink-2">
               Day
-              <select className="rounded-md border border-border bg-bg px-2 py-1 text-[13px] text-ink max-w-[22rem] truncate" value={instanceId ?? ""} onChange={(e) => setInstanceId(e.target.value || null)}>
+              <select
+                className="rounded-md border border-border bg-bg px-2 py-1 text-[13px] text-ink max-w-[22rem] truncate"
+                value={instanceId ?? ""}
+                onChange={(e) => setInstanceId(e.target.value || null)}
+              >
                 {instances.length === 0 && <option value="">— generate one on the Data page —</option>}
                 {instances.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -69,7 +73,10 @@ export function Shell({ page, onNavigate, status, children }: { page: PageKey; o
             </label>
           </div>
         )}
-        <div className="max-w-6xl mx-auto px-6 pt-3 text-[11px] text-ink-2 flex flex-wrap gap-x-3 gap-y-1" title="What you are looking at is a generated day. Tariffs and duty-time limits are indicative placeholders; every number is a simulation on synthetic data.">
+        <div
+          className="max-w-6xl mx-auto px-6 pt-3 text-[11px] text-ink-2 flex flex-wrap gap-x-3 gap-y-1"
+          title="What you are looking at is a generated day. Tariffs and duty-time limits are indicative placeholders; every number is a simulation on synthetic data."
+        >
           <span className="rounded bg-hover px-1.5 py-0.5">Synthetic data</span>
           <span className="rounded bg-hover px-1.5 py-0.5">Indicative tariffs &amp; FDTL limits</span>
           <span className="rounded bg-hover px-1.5 py-0.5">Decision support only — the controller decides</span>
@@ -101,9 +108,24 @@ export function Tag({ tone = "blue", children, title }: { tone?: "blue" | "ok" |
   );
 }
 
-export function Button({ children, onClick, variant = "primary", disabled, title, type = "button" }: { children: ReactNode; onClick?: () => void; variant?: "primary" | "ghost" | "danger"; disabled?: boolean; title?: string; type?: "button" | "submit" }) {
+export function Button({
+  children,
+  onClick,
+  variant = "primary",
+  disabled,
+  title,
+  type = "button",
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  variant?: "primary" | "ghost" | "danger";
+  disabled?: boolean;
+  title?: string;
+  type?: "button" | "submit";
+}) {
   const base = "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors disabled:opacity-50 whitespace-nowrap";
-  const cls = variant === "primary" ? "bg-accent text-white hover:bg-accent-hover" : variant === "danger" ? "border border-bad text-bad hover:bg-bad-soft" : "border border-border bg-bg text-ink hover:bg-hover";
+  const cls =
+    variant === "primary" ? "bg-accent text-white hover:bg-accent-hover" : variant === "danger" ? "border border-bad text-bad hover:bg-bad-soft" : "border border-border bg-bg text-ink hover:bg-hover";
   return (
     <button type={type} title={title} className={`${base} ${cls}`} onClick={onClick} disabled={disabled}>
       {children}

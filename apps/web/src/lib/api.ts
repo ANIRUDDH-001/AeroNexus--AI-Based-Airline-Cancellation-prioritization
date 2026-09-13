@@ -6,7 +6,10 @@ const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/
 const WRITE_KEY = (import.meta.env.VITE_API_KEY as string | undefined) || "";
 
 export class ApiError extends Error {
-  constructor(public status: number, public detail: unknown) {
+  constructor(
+    public status: number,
+    public detail: unknown,
+  ) {
     super(typeof detail === "string" ? detail : JSON.stringify(detail));
   }
 }
@@ -117,72 +120,266 @@ const json = (body: unknown) => JSON.stringify(body);
 // ---------------------------------------------------------------- types
 
 export type Health = {
-  status: string; engine_version: string; config_hash: string; config_version: number; narration_enabled: boolean;
+  status: string;
+  engine_version: string;
+  config_hash: string;
+  config_version: number;
+  narration_enabled: boolean;
   narration?: { mode: string; model: string | null; calls: number; accepted: number; rejected: number; failed: number; last_error: string | null };
   write_key_required?: boolean;
 };
 
 export type InstanceSummary = {
-  name: string; size: string; seed: number | null; day_start: string; airports: number; hubs: number; aircraft: number;
-  flights: number; crews: number; standby_crews: number; itineraries: number; booked_pax: number; connecting_pax: number; disruptions: number;
+  name: string;
+  size: string;
+  seed: number | null;
+  day_start: string;
+  airports: number;
+  hubs: number;
+  aircraft: number;
+  flights: number;
+  crews: number;
+  standby_crews: number;
+  itineraries: number;
+  booked_pax: number;
+  connecting_pax: number;
+  disruptions: number;
 };
 export type InstanceRow = { id: string; name: string; size: string; seed: number | null; created_at: string; summary: InstanceSummary };
 
-export type ParameterDef = { name: string; type: "number" | "bool" | "enum" | "text"; scope: string; default: unknown; unit?: string | null; description: string; source: string; choices?: string[] | null };
+export type ParameterDef = {
+  name: string;
+  type: "number" | "bool" | "enum" | "text";
+  scope: string;
+  default: unknown;
+  unit?: string | null;
+  description: string;
+  source: string;
+  choices?: string[] | null;
+};
 export type ObjectiveTerm = { name: string; level: "L1" | "L2" | "L3" | "L4"; expression: string; weight: number; enabled: boolean; description: string };
-export type ConstraintDef = { id: string; name: string; kind: "builtin" | "expression"; plugin: string | null; config: Record<string, unknown>; enabled: boolean; severity: "hard"; description: string };
-export type SearchSettings = Record<string, unknown> & { K: number; D: number; M: number; N: number; S: number; latency_budget_ms: number; hysteresis_pct: number; ranking_mode: "composite" | "priority"; candidate_scope: string; max_delay_min: number; at_risk_delay_threshold_min: number; top_n_returned: number; forced_cancel_delay_min: number };
+export type ConstraintDef = {
+  id: string;
+  name: string;
+  kind: "builtin" | "expression";
+  plugin: string | null;
+  config: Record<string, unknown>;
+  enabled: boolean;
+  severity: "hard";
+  description: string;
+};
+export type SearchSettings = Record<string, unknown> & {
+  K: number;
+  D: number;
+  M: number;
+  N: number;
+  S: number;
+  latency_budget_ms: number;
+  hysteresis_pct: number;
+  ranking_mode: "composite" | "priority";
+  candidate_scope: string;
+  max_delay_min: number;
+  at_risk_delay_threshold_min: number;
+  top_n_returned: number;
+  forced_cancel_delay_min: number;
+};
 export type EngineConfig = { parameters: ParameterDef[]; objective_terms: ObjectiveTerm[]; constraints: ConstraintDef[]; search: SearchSettings; preset_name: string };
 export type ConfigEnvelope = { version: number; hash: string; updated_at: string; config: EngineConfig };
 
-export type Disruption = { id: string; type: string; target: string; start: number; end_nominal: number | null; end_distribution: Record<string, unknown> | null; severity: Record<string, unknown>; attributes: Record<string, unknown> };
+export type Disruption = {
+  id: string;
+  type: string;
+  target: string;
+  start: number;
+  end_nominal: number | null;
+  end_distribution: Record<string, unknown> | null;
+  severity: Record<string, unknown>;
+  attributes: Record<string, unknown>;
+};
 
 export type TimelineFlight = {
-  id: string; number: string; origin: string; dest: string; std: number; sta: number; std_hhmm: string; sta_hhmm: string; tail: string | null; crew_id: string | null;
-  aircraft_type: string; booked_pax: number; pax_connecting: number; status: "OPERATED" | "PAST" | "CANCELLED_DECISION" | "CANCELLED_FORCED";
-  dep: number | null; arr: number | null; delay_min: number; reason: string | null; standby_called: boolean; at_risk: boolean; risk_reasons: string[]; protected: boolean;
+  id: string;
+  number: string;
+  origin: string;
+  dest: string;
+  std: number;
+  sta: number;
+  std_hhmm: string;
+  sta_hhmm: string;
+  tail: string | null;
+  crew_id: string | null;
+  aircraft_type: string;
+  booked_pax: number;
+  pax_connecting: number;
+  status: "OPERATED" | "PAST" | "CANCELLED_DECISION" | "CANCELLED_FORCED";
+  dep: number | null;
+  arr: number | null;
+  delay_min: number;
+  reason: string | null;
+  standby_called: boolean;
+  at_risk: boolean;
+  risk_reasons: string[];
+  protected: boolean;
 };
 export type AtRisk = { flight: string; reasons: string[]; delay_min: number; forced: boolean };
 export type Timeline = {
-  instance_id: string; clock: number; clock_hhmm: string; flights: TimelineFlight[]; rotations: Record<string, string[]>; disruptions: Disruption[]; at_risk: AtRisk[];
-  summary: { flights: number; at_risk: number; forced_cancellations: number; delayed_flights: number; total_delay_min: number; misconnects: number; stranded_overnight: number; standby_used: number; aircraft_available: number; standby_crews: number };
+  instance_id: string;
+  clock: number;
+  clock_hhmm: string;
+  flights: TimelineFlight[];
+  rotations: Record<string, string[]>;
+  disruptions: Disruption[];
+  at_risk: AtRisk[];
+  summary: {
+    flights: number;
+    at_risk: number;
+    forced_cancellations: number;
+    delayed_flights: number;
+    total_delay_min: number;
+    misconnects: number;
+    stranded_overnight: number;
+    standby_used: number;
+    aircraft_available: number;
+    standby_crews: number;
+  };
 };
 
-export type Action = { type: "CANCEL_LEG" | "CANCEL_CYCLE" | "DELAY" | "SWAP" | "WAIT"; target_flights: string[]; params?: Record<string, unknown>; feasibility?: { status: string; reasons: string[] }; metrics?: Record<string, number> };
+export type Action = {
+  type: "CANCEL_LEG" | "CANCEL_CYCLE" | "DELAY" | "SWAP" | "WAIT";
+  target_flights: string[];
+  params?: Record<string, unknown>;
+  feasibility?: { status: string; reasons: string[] };
+  metrics?: Record<string, number>;
+};
 export type Confidence = {
-  feasibility: string; feasible_share: number; data_freshness_min: number | null; stability: number | null; stability_label: string | null;
-  scenario_sensitivity: number | null; scenario_sensitivity_label: string | null; samples: number; uncertainty_evaluated?: boolean;
+  feasibility: string;
+  feasible_share: number;
+  data_freshness_min: number | null;
+  stability: number | null;
+  stability_label: string | null;
+  scenario_sensitivity: number | null;
+  scenario_sensitivity_label: string | null;
+  samples: number;
+  uncertainty_evaluated?: boolean;
 };
 export type Comparison = { verdict: string; differences: string[]; margin: number };
 export type Plan = {
-  actions: Action[]; metrics: Record<string, number>; nis: number; nis_breakdown: Record<string, number>;
+  actions: Action[];
+  metrics: Record<string, number>;
+  nis: number;
+  nis_breakdown: Record<string, number>;
   scenario_stats: { mean: number; p90: number; stability: number | null; samples: number } | null;
-  explanation: { actions: string[]; reasons: string[]; vs_do_nothing: Record<string, number>; remaining_at_risk: string[]; confidence: Confidence; forced_cancellations: { flight: string; reason: string }[]; standby_used: string[]; equivalent_alternatives: string[][]; why_over_next?: Comparison; vs_top?: Comparison };
+  explanation: {
+    actions: string[];
+    reasons: string[];
+    vs_do_nothing: Record<string, number>;
+    remaining_at_risk: string[];
+    confidence: Confidence;
+    forced_cancellations: { flight: string; reason: string }[];
+    standby_used: string[];
+    equivalent_alternatives: string[][];
+    why_over_next?: Comparison;
+    vs_top?: Comparison;
+  };
   rank: number | null;
 };
 export type Run = {
-  id: string; created_at: string; decision_time: number; instance_name: string; config_hash: string; engine_version: string; plans: Plan[]; excluded: Action[]; latency_ms: number;
-  accepted_plan: number | null; override_reason: string | null; narrative: string | null; notes: string[]; at_risk: AtRisk[]; baseline_metrics: Record<string, number>; plans_evaluated: number; depth_reached: number; whatif: Plan[];
-  instance_hash?: string | null; effective?: { samples: number; depth: number; candidates_per_node: number; deterministic: boolean; budget_cuts: string[]; surrogate: boolean };
+  id: string;
+  created_at: string;
+  decision_time: number;
+  instance_name: string;
+  config_hash: string;
+  engine_version: string;
+  plans: Plan[];
+  excluded: Action[];
+  latency_ms: number;
+  accepted_plan: number | null;
+  override_reason: string | null;
+  narrative: string | null;
+  notes: string[];
+  at_risk: AtRisk[];
+  baseline_metrics: Record<string, number>;
+  plans_evaluated: number;
+  depth_reached: number;
+  whatif: Plan[];
+  instance_hash?: string | null;
+  effective?: { samples: number; depth: number; candidates_per_node: number; deterministic: boolean; budget_cuts: string[]; surrogate: boolean };
 };
-export type RunRow = { id: string; created_at: string; instance_id: string; decision_time: number; config_hash: string; engine_version: string; accepted_plan: number | null; override_reason: string | null; latency_ms: number | null; top_plan: string[]; top_nis: number | null; at_risk: number; plans_evaluated: number | null; instance_hash?: string | null; effective?: { samples?: number; depth?: number } };
+export type RunRow = {
+  id: string;
+  created_at: string;
+  instance_id: string;
+  decision_time: number;
+  config_hash: string;
+  engine_version: string;
+  accepted_plan: number | null;
+  override_reason: string | null;
+  latency_ms: number | null;
+  top_plan: string[];
+  top_nis: number | null;
+  at_risk: number;
+  plans_evaluated: number | null;
+  instance_hash?: string | null;
+  effective?: { samples?: number; depth?: number };
+};
 
 export type Table = { entity: string; key: string; columns: string[]; attribute_columns: string[]; rows: Record<string, unknown>[] };
 
 export type CaseDef = { id: string; title: string; rationale: string; base: string; disruptions: string[]; decision_time: number; expected: string[] };
 export type CaseResult = {
-  id: string; title: string; passed: boolean; top1: string[]; expected: string[]; matched: "top1" | "acceptable" | "type" | "none"; checks: string[]; failures: string[];
-  latency_ms: number; nis: number | null; baseline_forced: number | null; plan_forced: number | null; rationale: string; top_reasons: string[];
-  plans: { rank: number | null; actions: string[]; nis: number }[]; excluded: { key: string; reasons: string[] }[]; plans_evaluated: number;
+  id: string;
+  title: string;
+  passed: boolean;
+  top1: string[];
+  expected: string[];
+  matched: "top1" | "acceptable" | "type" | "none";
+  checks: string[];
+  failures: string[];
+  latency_ms: number;
+  nis: number | null;
+  baseline_forced: number | null;
+  plan_forced: number | null;
+  rationale: string;
+  top_reasons: string[];
+  plans: { rank: number | null; actions: string[]; nis: number }[];
+  excluded: { key: string; reasons: string[] }[];
+  plans_evaluated: number;
 };
 export type CasesRun = { config_hash: string; config_version: number; use_surrogate: boolean; passed: number; total: number; elapsed_ms: number; results: CaseResult[] };
 export type PolicySummary = {
-  nis_mean: number; nis_p90_mean: number; forced_mean: number; pax_cancelled_mean: number; pax_stranded_mean: number; misconnects_mean: number; delay_min_mean: number;
-  win_rate_vs_B0: number; tie_rate_vs_B0: number; improvement_vs_B0_pct: number; latency_ms_mean: number; latency_ms_p95: number;
+  nis_mean: number;
+  nis_p90_mean: number;
+  forced_mean: number;
+  pax_cancelled_mean: number;
+  pax_stranded_mean: number;
+  misconnects_mean: number;
+  delay_min_mean: number;
+  win_rate_vs_B0: number;
+  tie_rate_vs_B0: number;
+  improvement_vs_B0_pct: number;
+  latency_ms_mean: number;
+  latency_ms_p95: number;
 };
-export type PolicyOutcome = { nis_mean: number; nis_p90: number; forced: number; pax_cancelled: number; pax_stranded: number; misconnects: number; delay_min: number; latency_ms: number; actions: string[] };
+export type PolicyOutcome = {
+  nis_mean: number;
+  nis_p90: number;
+  forced: number;
+  pax_cancelled: number;
+  pax_stranded: number;
+  misconnects: number;
+  delay_min: number;
+  latency_ms: number;
+  actions: string[];
+};
 export type Benchmark = {
-  created_at: string; config_hash: string; current_config_hash: string; stale: boolean; scenarios: number; s_eval: number; block_sigma: number; seed: number;
+  created_at: string;
+  config_hash: string;
+  current_config_hash: string;
+  stale: boolean;
+  scenarios: number;
+  s_eval: number;
+  block_sigma: number;
+  seed: number;
   summary: Record<string, PolicySummary>;
   records: { name: string; size: string; disruption: string; clock: number; at_risk: number; baseline_forced: number; policies: Record<string, PolicyOutcome> }[];
 };

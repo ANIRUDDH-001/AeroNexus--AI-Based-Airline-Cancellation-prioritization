@@ -34,7 +34,10 @@ function ConfidenceChips({ p }: { p: Plan }) {
           </Tag>
         </>
       ) : (
-        <Tag tone="warn" title="Fewer than 3 sampled futures fitted in the latency budget on this machine, so stability and sensitivity were not evaluated. Set search.deterministic for the full readout.">
+        <Tag
+          tone="warn"
+          title="Fewer than 3 sampled futures fitted in the latency budget on this machine, so stability and sensitivity were not evaluated. Set search.deterministic for the full readout."
+        >
           uncertainty not evaluated ({c.samples} sample{c.samples === 1 ? "" : "s"})
         </Tag>
       )}
@@ -182,9 +185,18 @@ export function RecommendationsPage() {
     setRun(null);
     setWhatif(null);
     if (!instanceId) return;
-    api.timeline(instanceId, clock).then(setTl).catch(() => setTl(null));
+    api
+      .timeline(instanceId, clock)
+      .then(setTl)
+      .catch(() => setTl(null));
     // static demo mode serves the nearest precomputed run, whose decision time may differ from the slider
-    if (lastRunId) api.run(lastRunId).then((r) => { if (r.decision_time === clock || staticMode.active) setRun(r); }).catch(() => undefined);
+    if (lastRunId)
+      api
+        .run(lastRunId)
+        .then((r) => {
+          if (r.decision_time === clock || staticMode.active) setRun(r);
+        })
+        .catch(() => undefined);
   }, [instanceId, clock, lastRunId]);
 
   const recommend = async () => {
@@ -219,7 +231,7 @@ export function RecommendationsPage() {
       const a: Action = { type: wiType, target_flights: [wiFlight], params: wiType === "DELAY" ? { delay_min: Number(wiParam) } : wiType === "SWAP" ? { swap_tail: wiParam } : {} };
       if (wiType === "CANCEL_CYCLE" && tl) {
         const f = tl.flights.find((x) => x.id === wiFlight);
-        const rot = f?.tail ? tl.rotations[f.tail] ?? [] : [];
+        const rot = f?.tail ? (tl.rotations[f.tail] ?? []) : [];
         const i = rot.indexOf(wiFlight);
         const cyc: string[] = [];
         for (let j = i; j >= 0 && j < rot.length && cyc.length < 4; j++) {
@@ -290,15 +302,7 @@ export function RecommendationsPage() {
           {run.plans.length === 0 && <Empty>Recommendation unavailable — no feasible plan could be evaluated.</Empty>}
           <div className="space-y-3">
             {run.plans.map((p) => (
-              <PlanCard
-                key={p.rank}
-                p={p}
-                run={run}
-                maxLevel={maxLevel}
-                decided={decided}
-                onAccept={() => decide(p.rank, null)}
-                onOverride={(reason) => decide(p.rank, reason)}
-              />
+              <PlanCard key={p.rank} p={p} run={run} maxLevel={maxLevel} decided={decided} onAccept={() => decide(p.rank, null)} onOverride={(reason) => decide(p.rank, reason)} />
             ))}
           </div>
 
@@ -326,12 +330,14 @@ export function RecommendationsPage() {
                 Flight
                 <select className={`${inputCls} mt-1 block w-56`} value={wiFlight} onChange={(e) => setWiFlight(e.target.value)}>
                   <option value="">— choose —</option>
-                  {(tl?.flights ?? []).filter((f) => f.status !== "PAST" && f.status !== "CANCELLED_DECISION").map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.number} {f.origin}→{f.dest} {f.std_hhmm}
-                      {f.at_risk ? " ⚠" : ""}
-                    </option>
-                  ))}
+                  {(tl?.flights ?? [])
+                    .filter((f) => f.status !== "PAST" && f.status !== "CANCELLED_DECISION")
+                    .map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.number} {f.origin}→{f.dest} {f.std_hhmm}
+                        {f.at_risk ? " ⚠" : ""}
+                      </option>
+                    ))}
                 </select>
               </label>
               {wiType === "DELAY" && (
@@ -361,12 +367,7 @@ export function RecommendationsPage() {
                   <Tag tone="blue">{whatif.whatif[0].explanation.actions.join(" + ")}</Tag>
                   <span>
                     would rank <span className="font-semibold">#{whatif.whatif[0].rank}</span> with NIS <span className="font-mono">{fmt(whatif.whatif[0].nis)}</span>
-                    {whatif.plans[0] && (
-                      <span className="text-ink-2">
-                        {" "}
-                        vs {fmt(whatif.plans[0].nis)} for the recommendation
-                      </span>
-                    )}
+                    {whatif.plans[0] && <span className="text-ink-2"> vs {fmt(whatif.plans[0].nis)} for the recommendation</span>}
                   </span>
                 </div>
                 <ul className="mt-2 space-y-0.5">
