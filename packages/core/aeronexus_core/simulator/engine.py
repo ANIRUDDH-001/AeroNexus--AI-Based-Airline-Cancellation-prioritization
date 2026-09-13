@@ -109,9 +109,19 @@ def _in(t: int, windows: list[TimeWindow]) -> TimeWindow | None:
 
 
 class Simulator:
+    """Discrete-event propagation of one operational day.
+
+    Decision time is handled as *realised past + forecast future* (Plan §7): the day is first forecast once
+    from 00:00 with the committed decisions only; every leg that forecast shows departing (or failing) before
+    the decision time is pinned to that outcome, and only the future is re-simulated for the plan under
+    evaluation. Without this, moving the clock forward re-queued every already-late flight at the decision
+    time and the day looked worse with every tick although nothing had happened.
+    """
+
     def __init__(self, instance: Instance, config: EngineConfig):
         self.inst = instance
         self.cfg = config
+        self._forecast_cache: dict[tuple, dict[str, LegOutcome]] = {}
         s = config.search
         self.forced_cancel_delay = s.forced_cancel_delay_min
         self.standby_hold = s.standby_hold_min
@@ -190,14 +200,49 @@ class Simulator:
                 crew_unavail_req.append((d.target, int(d.severity.get("n_crews", 1)), d.start))
         return cap, lvp, closure, aog, source_delay, crew_unavail_req
 
+    # ------------------------------------------------------------ realised past
+
+    def forecast(self, disruptions: list[Disruption] | None = None) -> dict[str, LegOutcome]:
+        """The day as expected at 00:00 under the committed decisions (nominal disruption ends). Cached."""
+        key = (self.inst.committed.key(), None if disruptions is None else tuple(d.id for d in disruptions))
+        if key not in self._forecast_cache:
+            self._forecast_cache[key] = self.run(self.inst.committed, clock=0, sample=None, disruptions=disruptions,
+                                                 realised={}).legs
+        return self._forecast_cache[key]
+
+    def realised_at(self, clock: int, disruptions: list[Disruption] | None = None) -> dict[str, LegOutcome]:
+        """Outcomes that are history at ``clock``: legs the forecast shows departed before the decision time,
+        and legs that were due before it and could not operate."""
+        if clock <= 0:
+            return {}
+        out: dict[str, LegOutcome] = {}
+        for fid, o in self.forecast(disruptions).items():
+            f = self._flights[fid]
+            if o.operated and o.dep is not None and o.dep < clock:
+                out[fid] = o
+            elif o.status == "CANCELLED_FORCED" and f.std < clock:
+                out[fid] = o
+        return out
+
     # ------------------------------------------------------------ main run
 
     def run(self, decisions: Decisions, clock: int = 0, sample: ScenarioSample | None = None,
-            disruptions: list[Disruption] | None = None) -> SimResult:
+            disruptions: list[Disruption] | None = None,
+            realised: dict[str, LegOutcome] | None = None) -> SimResult:
         inst = self.inst
         disruptions = inst.disruptions if disruptions is None else disruptions
         cap, lvp, closure, aog, source_delay, crew_unavail_req = self._effects(disruptions, sample)
         cancelled = set(decisions.cancelled)
+        if realised is None:
+            realised = self.realised_at(clock, None if disruptions is inst.disruptions else disruptions)
+        # standby call-outs the forecast made for legs that leave shortly after the decision time have already
+        # happened: the standby is committed to that leg even if the leg itself is still open to decisions
+        crew_pins: dict[str, str] = {}
+        if clock > 0 and realised is not None:
+            for fid, o in self.forecast(None if disruptions is inst.disruptions else disruptions).items():
+                if (fid not in realised and o.operated and o.standby_called and o.crew_id and o.dep is not None
+                        and o.dep - self.callout_lead < clock and fid not in cancelled):
+                    crew_pins[fid] = o.crew_id
 
         # effective tails / crews
         eff_tail = {f.id: decisions.tail_override.get(f.id, f.tail) for f in inst.flights}
@@ -249,6 +294,28 @@ class Simulator:
             pool.sort(key=lambda s: (s.crew.callout_min, s.crew.id))
 
         usage: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
+        standby_used: list[str] = []
+
+        def take_over(fid: str, sb: _CrewState) -> None:
+            """A standby takes over the rostered crew's remaining sequence from ``fid`` onwards."""
+            rostered = eff_crew.get(fid)
+            cur: str | None = fid
+            while cur is not None:
+                if eff_crew.get(cur) == rostered:
+                    eff_crew[cur] = sb.crew.id
+                cur = crew_next.get(cur)
+            by_crew.setdefault(sb.crew.id, [])
+
+        for fid, pc in crew_pins.items():
+            cs_pin = crew_state.get(pc)
+            if cs_pin is None or cs_pin.used:
+                continue
+            o = self.forecast(None if disruptions is inst.disruptions else disruptions)[fid]
+            cs_pin.used = True
+            standby_used.append(pc)
+            cs_pin.duty_start = max(0, (o.dep or 0) - self.callout_lead)
+            cs_pin.ready_at = max(cs_pin.ready_at, cs_pin.duty_start + cs_pin.crew.callout_min)
+            take_over(fid, cs_pin)
 
         def capacity(ap: str, hour: int) -> int:
             over = cap.get(ap)
@@ -275,7 +342,6 @@ class Simulator:
             return t
 
         outcomes: dict[str, LegOutcome] = {}
-        standby_used: list[str] = []
         processed: set[str] = set()
 
         def ready(fid: str) -> bool:
@@ -336,6 +402,34 @@ class Simulator:
                 processed.add(_fid)
                 push_successors(_fid)
 
+            # --- realised past: replay what already happened instead of re-deciding it
+            po = realised.get(fid) if realised else None
+            if po is not None:
+                if po.operated and po.dep is not None and po.arr is not None:
+                    ptail = po.tail or tail
+                    if ptail in ac_state:
+                        pac = ac_state[ptail]
+                        pac.location = f.dest
+                        pac.ready_at = po.arr + self._types[f.aircraft_type].turnaround(self._hub.get(f.dest, False))
+                    pc = po.crew_id
+                    if pc and pc in crew_state:
+                        pcs = crew_state[pc]
+                        if po.standby_called and pcs.crew.is_standby and not pcs.used:
+                            pcs.used = True
+                            standby_used.append(pc)
+                            pcs.duty_start = max(0, po.dep - self.callout_lead)
+                            take_over(fid, pcs)
+                        turn = self._types[f.aircraft_type].turnaround(self._hub.get(f.dest, False))
+                        pcs.location = f.dest
+                        pcs.ready_at = po.arr + turn
+                        pcs.sectors += 1
+                        pcs.flight_time += po.arr - po.dep
+                    finish(LegOutcome(fid, "PAST", dep=po.dep, arr=po.arr, delay_min=po.delay_min, tail=ptail,
+                                      crew_id=pc, standby_called=po.standby_called))
+                else:
+                    finish(LegOutcome(fid, "CANCELLED_FORCED", tail=po.tail or tail, crew_id=po.crew_id or crew_id,
+                                      reason=f"{po.reason} (already failed before the decision time)"))
+                continue
             if fid in cancelled:
                 finish(LegOutcome(fid, "CANCELLED_DECISION", tail=tail, crew_id=crew_id, reason="cancelled by plan"))
                 continue
@@ -455,13 +549,7 @@ class Simulator:
                     arr = slot(f.dest, dep + block)
                 standby_called = True
                 standby_used.append(sb.crew.id)
-                # the standby takes over the rest of this crew's sequence
-                cur: str | None = fid
-                while cur is not None:
-                    if eff_crew.get(cur) == crew_id:
-                        eff_crew[cur] = sb.crew.id
-                    cur = crew_next.get(cur)
-                by_crew.setdefault(sb.crew.id, [])
+                take_over(fid, sb)  # the standby takes over the rest of this crew's sequence
                 cs = sb
                 crew_id = sb.crew.id
             if dep - f.std > self.forced_cancel_delay:
@@ -469,12 +557,12 @@ class Simulator:
                                   reason=f"could not depart within {self.forced_cancel_delay} min"))
                 continue
 
-            # --- operate
+            # --- operate (departs at or after the decision time; departures before it are pinned above)
             assert cs is not None
             delay = dep - f.std
-            status: LegStatus = "PAST" if f.std < clock and delay <= source_delay.get(fid, 0) else "OPERATED"
+            status: LegStatus = "OPERATED"
             finish(LegOutcome(fid, status, dep=dep, arr=arr, delay_min=delay, tail=tail, crew_id=crew_id,
-                              standby_called=standby_called))
+                              standby_called=standby_called or fid in crew_pins))
             ac.location = f.dest
             ac.ready_at = arr + typ.turnaround(self._hub.get(f.dest, False))
             cs.location = f.dest
@@ -491,7 +579,7 @@ class Simulator:
         tail_end = {t: (s.location or "") for t, s in ac_state.items()}
         crew_end = {c: s.location for c, s in crew_state.items()}
         itins = self._passengers(outcomes)
-        metrics = self._metrics(outcomes, itins, decisions, tail_end, crew_end, standby_used, source_delay)
+        metrics = self._metrics(outcomes, itins, decisions, tail_end, crew_end, standby_used, source_delay, disruptions)
         return SimResult(legs=outcomes, itineraries=itins, metrics=metrics, tail_end_location=tail_end,
                          crew_end_location=crew_end, standby_used=standby_used)
 
@@ -561,10 +649,38 @@ class Simulator:
         rate = self.comp[0] if b <= 60 else self.comp[1] if b <= 120 else self.comp[2]
         return rate * pax
 
+    # DGCA CAR Section 3 Series M Part IV: no compensation when the cancellation is caused by extraordinary
+    # circumstances beyond the airline's control (weather, ATC, airport closure, security). Refunds, meals
+    # and hotel still apply and are costed separately.
+    EXEMPT_DISRUPTIONS = ("LVP", "CLOSURE", "AIRPORT_CAPACITY", "ATC_FLOW")
+    _EXEMPT_REASON_WORDS = ("curfew", "closure", "capacity", "low-visibility", "slot")
+
+    def _compensation_exempt(self, f: Flight, o: LegOutcome, disruptions: list[Disruption]) -> bool:
+        """True when the cancellation of ``f`` is attributable to weather/ATC/airport rather than the airline."""
+        if o.status == "CANCELLED_FORCED" and o.reason:
+            r = o.reason.lower()
+            if "aog" in r or "crew" in r or "no aircraft" in r:
+                return False
+            if any(w in r for w in self._EXEMPT_REASON_WORDS):
+                return True
+        # decided (or upstream) cancellations: exempt when an extraordinary disruption covers the flight's window
+        for d in disruptions:
+            if d.type not in self.EXEMPT_DISRUPTIONS or d.target not in (f.origin, f.dest):
+                continue
+            end = d.end_nominal if d.end_nominal is not None else 48 * 60
+            t = f.std if d.target == f.origin else f.sta
+            if d.start - 120 <= t < end + 60:  # knock-on within two hours of the window still counts
+                return True
+        ap_dest = self._airports.get(f.dest)
+        if ap_dest and _in(f.sta, ap_dest.curfew_windows):
+            return True
+        return False
+
     def _metrics(self, legs: dict[str, LegOutcome], itins: list[ItineraryOutcome], decisions: Decisions,
                  tail_end: dict[str, str], crew_end: dict[str, str], standby_used: list[str],
-                 source_delay: dict[str, int]) -> Metrics:
+                 source_delay: dict[str, int], disruptions: list[Disruption] | None = None) -> Metrics:
         inst = self.inst
+        disruptions = inst.disruptions if disruptions is None else disruptions
         m = Metrics()
         affected: list[str] = []
         for fid, o in legs.items():
@@ -577,7 +693,11 @@ class Simulator:
                 m.special_assistance_affected += f.pax_special_assistance
                 m.high_value_affected += f.pax_high_value
                 m.partner_pax_affected += f.pax_partner
-                m.compensation_inr += self._compensation(f, f.booked_pax)
+                comp = self._compensation(f, f.booked_pax)
+                if self._compensation_exempt(f, o, disruptions):
+                    m.compensation_exempt_inr += comp
+                else:
+                    m.compensation_inr += comp
                 affected.append(fid)
             else:
                 m.total_delay_min += o.delay_min

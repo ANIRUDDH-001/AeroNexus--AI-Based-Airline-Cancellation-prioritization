@@ -84,7 +84,8 @@ class GeneratorParams:
     post_flight_duty_min: int = 30  # must match search.post_flight_duty_min so generated pairings are legal in the simulator
     standby_per_hub: tuple[int, int] = (2, 4)
     standby_callout: tuple[int, int] = (60, 90)
-    cat3_share: float = 0.6
+    cat3_share: float = 0.85       # DGCA (Dec 2023) directed airlines to roster CAT-III-trained pilots on fog-prone routes; IndiGo reports a large majority trained
+    max_legs_per_tail: int = 8     # jets; turboprop shuttles may fly up to max_legs_per_tail + 2
     week_flight_time_prior: tuple[int, int] = (600, 1500)
     # airports
     hub_capacity: tuple[int, int] = (30, 40)
@@ -276,6 +277,10 @@ class _Gen:
                             break
                     else:
                         break
+                cap_legs = p.max_legs_per_tail + (2 if typ.code.upper().startswith("ATR") else 0)
+                if len(legs) + len(cycle) > cap_legs:
+                    self._fno -= len(cycle)
+                    break
                 legs.extend(cycle)
                 block_total += sum(leg.block_min for leg in cycle)
                 t = cycle[-1].sta + self._turn(typ, base)

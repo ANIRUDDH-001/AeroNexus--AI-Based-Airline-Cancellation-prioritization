@@ -42,9 +42,11 @@ def detect_at_risk(state: State, baseline: SimResult, config: EngineConfig) -> l
     targeted = {d.target for d in inst.disruptions if d.type == "FLIGHT_DELAY"}
     out: list[AtRisk] = []
     for f in inst.flights:
-        if f.id in cancelled or f.std < state.clock:
-            continue  # already decided or already departed
+        if f.id in cancelled:
+            continue  # already decided
         o = baseline.legs[f.id]
+        if o.status == "PAST" or (o.status == "CANCELLED_FORCED" and f.std < state.clock):
+            continue  # already departed, or already failed before the decision time: history, not a choice
         r = AtRisk(flight_id=f.id, delay_min=o.delay_min)
         if o.status == "CANCELLED_FORCED":
             r.forced = True
@@ -165,8 +167,11 @@ def generate_candidates(state: State, at_risk: list[AtRisk], baseline: SimResult
             seen.add(k)
             out.append(a)
 
+    horizon_end = state.clock + int(s.horizon_hours * 60)
     for r in at_risk:
         f = inst.flight(r.flight_id)
+        if f.std > horizon_end:
+            continue  # beyond the decision horizon: watched, but decided at a later run (keeps large days tractable)
         add(Action(type="CANCEL_LEG", target_flights=[f.id]))
         cyc = cycle_from(state, f.id, rot)
         if len(cyc) > 1:

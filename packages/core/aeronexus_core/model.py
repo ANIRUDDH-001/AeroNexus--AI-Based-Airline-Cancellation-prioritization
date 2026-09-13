@@ -211,6 +211,9 @@ class Instance(BaseModel):
     itineraries: list[Itinerary]
     disruptions: list[Disruption] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # decisions the controller has already committed today (accepted plans). They are part of the day's
+    # state: the simulator's forecast, the realised past and every new recommendation start from them.
+    committed: Decisions = Field(default_factory=lambda: Decisions())
 
     # ---- lookups ----------------------------------------------------------------
     # Instances are treated as immutable once built; lookups are cached on first use and the caches
@@ -383,6 +386,7 @@ class Run(BaseModel):
     depth_reached: int = 0
     whatif: list[Plan] = Field(default_factory=list)  # caller-supplied plans, always returned with their rank
     instance_hash: str | None = None  # content hash of the day the run saw (edits change it; see instance_hash())
+    committed_at: str | None = None  # set when the accepted plan was written into the day's committed decisions
     effective: dict[str, Any] = Field(default_factory=dict)  # what the search actually used: samples, depth, deterministic
 
 
@@ -447,3 +451,8 @@ class State(BaseModel):
 
     def apply(self, action: Action) -> State:
         return State(clock=self.clock, instance=self.instance, decisions=self.decisions.extended(action, self.instance))
+
+
+# ``Instance.committed`` refers to ``Decisions``, which is declared later in this module.
+Instance.model_rebuild()
+State.model_rebuild()

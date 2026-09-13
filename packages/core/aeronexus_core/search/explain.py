@@ -13,7 +13,7 @@ from ..scoring.nis import NISResult
 from ..simulator.engine import SimResult
 
 _TERM_WORDS: dict[str, str] = {
-    "forced_downstream_cancellations": "downstream cancellations",
+    "forced_downstream_cancellations": "flights left to fail at departure (no decision, no notice)",
     "propagated_delay": "propagated delay",
     "next_wave_shortfall": "aircraft out of position for tomorrow",
     "pax_cancelled": "passengers on cancelled flights",

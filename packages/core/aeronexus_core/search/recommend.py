@@ -95,9 +95,16 @@ def recommend(
         res = sim.run(state.decisions, clock=clock)
         return res, compute_nis(res.metrics, config, _affected(instance, res.metrics))
 
-    base_state = State(clock=clock, instance=instance)
+    base_state = State(clock=clock, instance=instance, decisions=instance.committed)
     base_res, base_nis = evaluate(base_state)
+    if instance.committed.cancelled or instance.committed.swaps or instance.committed.delays:
+        notes.append(f"starts from {len(instance.committed.cancelled)} committed cancellation(s), "
+                     f"{len(instance.committed.swaps)} swap(s), {len(instance.committed.delays)} delay(s)")
     root = PlanNode(base_state, [], base_res, base_nis, detect_at_risk(base_state, base_res, config))
+    beyond = [r for r in root.at_risk if instance.flight(r.flight_id).std > clock + int(s.horizon_hours * 60)]
+    if beyond:
+        notes.append(f"{len(beyond)} at-risk flight(s) depart more than {s.horizon_hours:g} h from now and are left "
+                     "for a later decision (search.horizon_hours)")
 
     seen: dict[str, PlanNode] = {root.key: root}
     excluded: dict[str, Action] = {}
@@ -127,6 +134,12 @@ def recommend(
                     feasible.append(a)
             cands = prerank(feasible, node.state, node.at_risk, s.M, node.result, ranker)
             for a in cands:
+                if not s.deterministic and time.perf_counter() - t0 > budget * 0.8:
+                    note = f"latency budget: stopped evaluating candidates at depth {depth + 1}"
+                    if note not in notes:
+                        notes.append(note)
+                        budget_cuts.append(f"candidates depth {depth + 1}")
+                    break
                 st2 = node.state.apply(a)
                 if st2.decisions.key() in seen:
                     continue

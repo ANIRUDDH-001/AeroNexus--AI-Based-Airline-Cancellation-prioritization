@@ -26,7 +26,8 @@ class Metrics:
     pax_reprotected_within_4h: float = 0
     pax_reprotected_same_day: float = 0
     # L3 cost
-    compensation_inr: float = 0
+    compensation_inr: float = 0          # payable under DGCA CAR Sec 3 Series M Part IV (airline-attributable causes)
+    compensation_exempt_inr: float = 0   # what the same tariff would be for cancellations caused by weather / ATC / closures (not payable)
     crew_standby_used: float = 0
     crew_out_of_position: float = 0
     swaps: float = 0

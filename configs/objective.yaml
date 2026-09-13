@@ -9,7 +9,7 @@ objective_terms:
     level: L1
     expression: forced_downstream_cancellations
     weight: 2000
-    description: Flights that could no longer operate because of this plan (aircraft position, crew, curfew).
+    description: Flights that cancel themselves during the day without a decision (aircraft or crew never arrive, curfew, no slot). The penalty is for deciding late - passengers, crews and stations get no notice - not for the cancellation itself, which the passenger and cost terms price. Deciding a doomed flight early therefore scores better than letting it fail.
   - name: propagated_delay
     level: L1
     expression: propagated_delay_min
@@ -63,7 +63,7 @@ objective_terms:
     level: L3
     expression: compensation_inr
     weight: 0.001
-    description: DGCA CAR Sec 3 Series M Part IV compensation (defaults in parameters.yaml — VERIFY current CAR).
+    description: DGCA CAR Sec 3 Series M Part IV compensation for cancellations attributable to the airline (AOG, crew). Cancellations caused by weather, ATC or airport closures are exempt under the CAR and are reported separately as compensation_exempt_inr. Tariffs in parameters.yaml - VERIFY current CAR.
   - name: hotel_meal
     level: L3
     expression: pax_stranded_overnight * hotel_meal_rate_inr
