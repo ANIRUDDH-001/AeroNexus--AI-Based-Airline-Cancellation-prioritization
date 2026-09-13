@@ -99,6 +99,7 @@ async function serveStatic<T>(path: string, init: RequestInit | undefined, cause
   if (p === "/health") return { status: "static", engine_version: idx.engine_version, config_hash: idx.config_hash, config_version: 1, narration_enabled: false } as T;
   if (p === "/config" && method === "GET") return staticFile<T>("config.json");
   if (p === "/config/presets") return [] as T;
+  if (p === "/config/metrics") return staticFile<T>("metrics.json").catch(() => ({ metrics: [] }) as T);
   if (p === "/data/instances") return [idx.instance] as T;
   if (p === `/data/instances/${STATIC_ID}`) return staticFile<T>("instance.json");
   if (table) return staticFile<T>(`table_${table}.json`);
@@ -222,6 +223,7 @@ export type TimelineFlight = {
   protected: boolean;
 };
 export type AtRisk = { flight: string; reasons: string[]; delay_min: number; forced: boolean };
+export type Committed = { cancelled: string[]; delays: Record<string, number>; swaps: string[]; tail_override: Record<string, string>; labels: string[]; count: number };
 export type Timeline = {
   instance_id: string;
   clock: number;
@@ -230,6 +232,7 @@ export type Timeline = {
   rotations: Record<string, string[]>;
   disruptions: Disruption[];
   at_risk: AtRisk[];
+  committed?: Committed;
   summary: {
     flights: number;
     at_risk: number;
@@ -387,6 +390,23 @@ export type Entity = "flights" | "aircraft" | "crews" | "airports" | "itinerarie
 
 // ---------------------------------------------------------------- calls
 
+/** Raw health probe with no static fallback: used to detect a sleeping/waking engine (Render cold start). */
+export async function pingLive(timeoutMs = 8000): Promise<Health | null> {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${BASE}/health`, { signal: ctl.signal });
+    if (!res.ok) return null;
+    const h = (await res.json()) as Health;
+    staticMode.set(false);
+    return h;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 export const api = {
   health: () => request<Health>("/health"),
   // config
@@ -421,6 +441,8 @@ export const api = {
   runs: (instanceId?: string) => request<RunRow[]>(`/runs${instanceId ? `?instance_id=${instanceId}` : ""}`),
   run: (id: string) => request<Run>(`/runs/${id}`),
   decide: (id: string, body: { accepted_plan: number | null; override_reason: string | null }) => request<Run>(`/runs/${id}/decision`, { method: "POST", body: json(body) }),
+  committed: (id: string) => request<Committed>(`/data/instances/${id}/committed`),
+  resetCommitted: (id: string) => request<Committed>(`/data/instances/${id}/committed/reset`, { method: "POST" }),
   // validation
   cases: () => request<CaseDef[]>("/cases"),
   runCases: (body: { ids?: string[]; use_surrogate?: boolean }) => request<CasesRun>("/cases/run", { method: "POST", body: json(body) }),

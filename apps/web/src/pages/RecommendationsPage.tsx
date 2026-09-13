@@ -219,10 +219,28 @@ export function RecommendationsPage() {
     setError(null);
     try {
       setRun(await api.decide(run.id, { accepted_plan: accepted, override_reason: reason }));
+      if (accepted != null && instanceId)
+        api
+          .timeline(instanceId, clock)
+          .then(setTl)
+          .catch(() => undefined); // the day now carries the decision
     } catch (e) {
       setError(e instanceof ApiError ? `${e.status}: ${e.message}` : String(e));
     }
   };
+
+  // "Run recommendation" on the Disruptions page asks for an immediate run on arrival
+  useEffect(() => {
+    let wanted = false;
+    try {
+      wanted = sessionStorage.getItem("ax.autorun") === "1";
+      if (wanted) sessionStorage.removeItem("ax.autorun");
+    } catch {
+      /* storage unavailable */
+    }
+    if (wanted && instanceId && !run && !busy) void recommend();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instanceId]);
   const evalWhatIf = async () => {
     if (!instanceId || !wiFlight) return;
     setBusy(true);
@@ -267,6 +285,7 @@ export function RecommendationsPage() {
         }
       />
       {error && <p className="mb-3 text-[13px] text-bad">{error}</p>}
+      {tl?.committed && tl.committed.count > 0 && <p className="mb-3 text-[12px] text-ink-2">Starting from today's committed decisions: {tl.committed.labels.join(" · ")}</p>}
       {!run && !busy && <Empty>{tl ? `${tl.summary.at_risk} flight(s) at risk at ${tl.clock_hhmm}. Run the engine to get ranked plans.` : "Loading…"}</Empty>}
 
       {run && (

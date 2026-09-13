@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, fmt, type Timeline as TimelineData } from "@/lib/api";
+import { api, fmt, staticMode, type Timeline as TimelineData } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import { Card, Empty, Kpi, PageTitle, Tag } from "@/components/Shell";
 import { Timeline } from "@/components/Timeline";
@@ -12,7 +12,10 @@ export function OverviewPage({ onNavigate }: { onNavigate: (p: "recommendations"
   useEffect(() => {
     if (!instanceId) return;
     setError(null);
-    api.timeline(instanceId, clock).then(setTl).catch((e) => setError(String(e)));
+    api
+      .timeline(instanceId, clock)
+      .then(setTl)
+      .catch((e) => setError(String(e)));
   }, [instanceId, clock]);
 
   if (!instanceId)
@@ -43,6 +46,34 @@ export function OverviewPage({ onNavigate }: { onNavigate: (p: "recommendations"
         <Kpi label="Stranded overnight" value={fmt(s.stranded_overnight)} tone={s.stranded_overnight ? "bad" : "ok"} />
       </div>
 
+      {staticMode.active && (
+        <div className="mb-4 rounded-md border border-warn/40 bg-warn-soft px-3 py-2 text-[13px]">
+          You are looking at a precomputed demo: the engine is asleep or unreachable. Use <em>Wake engine</em> in the sidebar; live recommendations, edits and what-ifs resume once it answers.
+        </div>
+      )}
+      {tl.committed && tl.committed.count > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2 items-center text-[13px]">
+          <span className="text-ink-2">Committed today:</span>
+          {tl.committed.labels.map((l) => (
+            <Tag key={l} tone="blue">
+              {l}
+            </Tag>
+          ))}
+          <button
+            className="ml-auto text-ink-2 underline"
+            onClick={() =>
+              instanceId &&
+              api
+                .resetCommitted(instanceId)
+                .then(() => api.timeline(instanceId, clock).then(setTl))
+                .catch(() => undefined)
+            }
+            title="Undo all accepted plans for this day (runs keep their record)"
+          >
+            reset
+          </button>
+        </div>
+      )}
       {tl.disruptions.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2 items-center text-[13px]">
           <span className="text-ink-2">Active disruptions:</span>

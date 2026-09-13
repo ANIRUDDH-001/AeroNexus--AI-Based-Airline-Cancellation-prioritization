@@ -6,13 +6,71 @@ import { Button, Card, Empty, PageTitle, Tag, inputCls } from "@/components/Shel
 
 type Kind = "fog" | "capacity" | "aog" | "crew" | "atc" | "delay" | "closure";
 const KINDS: { kind: Kind; label: string; fields: { key: string; label: string; def: string }[] }[] = [
-  { kind: "fog", label: "Fog / low visibility (LVP)", fields: [{ key: "airport", label: "Airport", def: "DEL" }, { key: "start", label: "Start (min)", def: "300" }, { key: "duration", label: "Duration (min)", def: "240" }, { key: "fraction", label: "Capacity ×", def: "0.4" }] },
-  { kind: "capacity", label: "Airport capacity cut", fields: [{ key: "airport", label: "Airport", def: "BOM" }, { key: "start", label: "Start (min)", def: "480" }, { key: "duration", label: "Duration (min)", def: "180" }, { key: "fraction", label: "Capacity ×", def: "0.5" }] },
-  { kind: "atc", label: "ATC flow restriction", fields: [{ key: "airport", label: "Airport", def: "BLR" }, { key: "start", label: "Start (min)", def: "540" }, { key: "duration", label: "Duration (min)", def: "120" }, { key: "rate", label: "Movements / h", def: "12" }] },
-  { kind: "closure", label: "Airport closure", fields: [{ key: "airport", label: "Airport", def: "MAA" }, { key: "start", label: "Start (min)", def: "600" }, { key: "duration", label: "Duration (min)", def: "120" }] },
-  { kind: "aog", label: "Aircraft on ground (AOG)", fields: [{ key: "tail", label: "Tail", def: "" }, { key: "at", label: "From (min)", def: "540" }, { key: "duration", label: "Duration (min, 0 = rest of day)", def: "0" }] },
-  { kind: "crew", label: "Crews unavailable", fields: [{ key: "base", label: "Base", def: "DEL" }, { key: "n", label: "Crews", def: "3" }, { key: "at", label: "From (min)", def: "420" }] },
-  { kind: "delay", label: "Known delay on a flight", fields: [{ key: "flight", label: "Flight id", def: "" }, { key: "minutes", label: "Minutes", def: "90" }] },
+  {
+    kind: "fog",
+    label: "Fog / low visibility (LVP)",
+    fields: [
+      { key: "airport", label: "Airport", def: "DEL" },
+      { key: "start", label: "Start (min)", def: "300" },
+      { key: "duration", label: "Duration (min)", def: "240" },
+      { key: "fraction", label: "Capacity ×", def: "0.4" },
+    ],
+  },
+  {
+    kind: "capacity",
+    label: "Airport capacity cut",
+    fields: [
+      { key: "airport", label: "Airport", def: "BOM" },
+      { key: "start", label: "Start (min)", def: "480" },
+      { key: "duration", label: "Duration (min)", def: "180" },
+      { key: "fraction", label: "Capacity ×", def: "0.5" },
+    ],
+  },
+  {
+    kind: "atc",
+    label: "ATC flow restriction",
+    fields: [
+      { key: "airport", label: "Airport", def: "BLR" },
+      { key: "start", label: "Start (min)", def: "540" },
+      { key: "duration", label: "Duration (min)", def: "120" },
+      { key: "rate", label: "Movements / h", def: "12" },
+    ],
+  },
+  {
+    kind: "closure",
+    label: "Airport closure",
+    fields: [
+      { key: "airport", label: "Airport", def: "MAA" },
+      { key: "start", label: "Start (min)", def: "600" },
+      { key: "duration", label: "Duration (min)", def: "120" },
+    ],
+  },
+  {
+    kind: "aog",
+    label: "Aircraft on ground (AOG)",
+    fields: [
+      { key: "tail", label: "Tail", def: "" },
+      { key: "at", label: "From (min)", def: "540" },
+      { key: "duration", label: "Duration (min, 0 = rest of day)", def: "0" },
+    ],
+  },
+  {
+    kind: "crew",
+    label: "Crews unavailable",
+    fields: [
+      { key: "base", label: "Base", def: "DEL" },
+      { key: "n", label: "Crews", def: "3" },
+      { key: "at", label: "From (min)", def: "420" },
+    ],
+  },
+  {
+    kind: "delay",
+    label: "Known delay on a flight",
+    fields: [
+      { key: "flight", label: "Flight id", def: "" },
+      { key: "minutes", label: "Minutes", def: "90" },
+    ],
+  },
 ];
 
 function toSpec(kind: Kind, v: Record<string, string>): string {
@@ -42,7 +100,12 @@ export function DisruptionsPage({ onNavigate }: { onNavigate: (p: "recommendatio
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => instanceId && api.timeline(instanceId, clock).then(setTl).catch((e) => setError(String(e)));
+  const load = () =>
+    instanceId &&
+    api
+      .timeline(instanceId, clock)
+      .then(setTl)
+      .catch((e) => setError(String(e)));
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,7 +146,18 @@ export function DisruptionsPage({ onNavigate }: { onNavigate: (p: "recommendatio
         subtitle="What is happening today. Inject events, see the propagated effect on the Overview, then ask for a recommendation."
         right={
           tl && tl.summary.at_risk > 0 ? (
-            <Button onClick={() => onNavigate("recommendations")}>Run recommendation ({tl.summary.at_risk} at risk)</Button>
+            <Button
+              onClick={() => {
+                try {
+                  sessionStorage.setItem("ax.autorun", "1");
+                } catch {
+                  /* storage unavailable */
+                }
+                onNavigate("recommendations");
+              }}
+            >
+              Run recommendation ({tl.summary.at_risk} at risk)
+            </Button>
           ) : undefined
         }
       />
@@ -93,7 +167,14 @@ export function DisruptionsPage({ onNavigate }: { onNavigate: (p: "recommendatio
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-[12px] text-ink-2">
             Type
-            <select className={`${inputCls} mt-1 block`} value={kind} onChange={(e) => { setKind(e.target.value as Kind); setVals({}); }}>
+            <select
+              className={`${inputCls} mt-1 block`}
+              value={kind}
+              onChange={(e) => {
+                setKind(e.target.value as Kind);
+                setVals({});
+              }}
+            >
               {KINDS.map((k) => (
                 <option key={k.kind} value={k.kind}>
                   {k.label}
