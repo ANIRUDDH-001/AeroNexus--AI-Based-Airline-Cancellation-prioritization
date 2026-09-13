@@ -9,13 +9,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from aeronexus_core import ENGINE_VERSION
 
 from . import settings, storage
+from .routers import cases as cases_router
 from .routers import config as config_router
 from .routers import data as data_router
+from .routers import edit as edit_router
+from .routers import engine as engine_router
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     storage.init_db()
+    sur = engine_router.surrogate()
+    if sur is not None:
+        sur.warm()
     yield
 
 
@@ -34,6 +40,9 @@ app.add_middleware(
 )
 app.include_router(config_router.router)
 app.include_router(data_router.router)
+app.include_router(edit_router.router)
+app.include_router(engine_router.router)
+app.include_router(cases_router.router)
 
 
 @app.get("/health", tags=["meta"])
