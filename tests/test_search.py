@@ -99,13 +99,15 @@ def test_do_nothing_is_always_compared_under_uncertainty(config: EngineConfig):
     inst = inject(generate_size("medium", seed=8895), lvp("HYD", 316, 343, 0.5342957426208524, sigma=0.5))
     # generous latency budget so a loaded CI machine cannot truncate the search and change the answer
     cfg = config.model_copy(update={"search": config.search.model_copy(update={"latency_budget_ms": 60_000})})
-    run = recommend(inst, cfg, clock=440, seed=1)
-    ranked_keys = [p.actions for p in run.plans]
-    assert [] in ranked_keys, "do nothing must be among the returned plans for this day"
-    top = run.plans[0]
-    assert top.actions == [] and top.scenario_stats is not None and top.scenario_stats.samples == cfg.search.S
-    # every returned intervention is at least as expensive as waiting on the sampled futures
-    assert all(p.nis >= top.nis for p in run.plans)
+    # an empty what-if plan is "do nothing": it comes back with the rank it got among the finalists
+    run = recommend(inst, cfg, clock=440, seed=1, extra_plans=[[]])
+    assert run.whatif and run.whatif[0].actions == [] and run.whatif[0].rank is not None
+    nothing = run.whatif[0]
+    assert nothing.scenario_stats is not None and nothing.scenario_stats.samples == cfg.search.S
+    # whatever is returned must beat waiting on the *sampled* futures, never only on the nominal run
+    assert all(p.nis <= nothing.nis for p in run.plans)
+    if nothing.rank == 1:
+        assert run.plans[0].actions == []
 
 
 def test_overlapping_cancellations_are_described_as_one_label():

@@ -118,3 +118,49 @@ def test_pax_sentence_separates_decided_from_forced(config: EngineConfig, fog):
             assert "affecting" not in r
             if r.startswith("Forces"):
                 assert "passengers)" in r
+
+
+def test_realised_past_is_frozen_forecast(config: EngineConfig):
+    """Moving the decision time forward must not change what already happened: with no new decisions the
+    do-nothing outcome at any clock equals the 00:00 forecast, departed legs are PAST and not at risk."""
+    from aeronexus_core.model import State
+    from aeronexus_core.search import detect_at_risk
+    from aeronexus_core.simulator import Simulator
+    from aeronexus_datagen import generate_size
+
+    inst = inject(generate_size("medium", seed=1), lvp("DEL", 300, 240, 0.5), aog("VT-IAD", 520))
+    sim = Simulator(inst, config)
+    ref = sim.run(State(clock=0, instance=inst).decisions, clock=0)
+    for t in (300, 420, 600):
+        st = State(clock=t, instance=inst)
+        r = sim.run(st.decisions, clock=t)
+        assert r.metrics.forced_downstream_cancellations == ref.metrics.forced_downstream_cancellations
+        assert r.metrics.total_delay_min == ref.metrics.total_delay_min
+        assert r.metrics.pax_stranded_overnight == ref.metrics.pax_stranded_overnight
+        past = {k for k, o in r.legs.items() if o.status == "PAST"}
+        assert past == {k for k, o in ref.legs.items() if o.operated and o.dep is not None and o.dep < t}
+        risk = {a.flight_id for a in detect_at_risk(st, r, config)}
+        assert not (risk & past)
+
+
+def test_accepting_a_plan_commits_it_to_the_day(api_client):
+    iid = api_client.post("/data/generate", json={"size": "small", "seed": 2, "disruptions": ["aog:VT-IAB:600"]}).json()["id"]
+    run = api_client.post("/recommend", json={"instance_id": iid, "decision_time": 300}).json()
+    chosen = next(p for p in run["plans"] if p["actions"])
+    cancelled = [f for a in chosen["actions"] if a["type"] in ("CANCEL_LEG", "CANCEL_CYCLE") for f in a["target_flights"]]
+    r = api_client.post(f"/runs/{run['id']}/decision", json={"accepted_plan": chosen["rank"], "override_reason": None})
+    assert r.status_code == 200 and r.json()["committed_at"]
+    com = api_client.get(f"/data/instances/{iid}/committed").json()
+    assert com["count"] >= 1 and set(cancelled) <= set(com["cancelled"])
+    # the day now carries the decision: the timeline shows it and the next recommendation starts from it
+    tl = api_client.get("/timeline", params={"instance_id": iid, "t": 330}).json()
+    assert tl["committed"]["count"] == com["count"]
+    assert all(f["status"] == "CANCELLED_DECISION" for f in tl["flights"] if f["id"] in cancelled)
+    run2 = api_client.post("/recommend", json={"instance_id": iid, "decision_time": 330}).json()
+    assert any("committed" in n for n in run2["notes"])
+    assert not any(f in a["target_flights"] for p in run2["plans"] for a in p["actions"] for f in cancelled)
+    # choosing a different plan after committing is refused; reset clears the day
+    other = next((p["rank"] for p in run["plans"] if p["rank"] != chosen["rank"]), None)
+    if other:
+        assert api_client.post(f"/runs/{run['id']}/decision", json={"accepted_plan": other, "override_reason": None}).status_code == 409
+    assert api_client.post(f"/data/instances/{iid}/committed/reset").json()["count"] == 0
