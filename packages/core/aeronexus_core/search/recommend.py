@@ -24,13 +24,20 @@ from typing import Any
 from .. import ENGINE_VERSION
 from ..config.registry import EngineConfig, config_hash
 from ..constraints import Violation, build_constraints, check_all, check_all_simulated
-from ..model import Action, Instance, Plan, Run, ScenarioStats, State
+from ..model import Action, Instance, Plan, Run, ScenarioStats, State, fmt_time
 from ..scoring.metrics import Metrics
 from ..scoring.nis import NISResult, compute_nis, rank_plans
 from ..simulator import Simulator, sample_scenarios
 from ..simulator.engine import SimResult
 from .candidates import AtRisk, detect_at_risk, generate_candidates, prerank
-from .explain import compare, confidence, deltas_vs_baseline, describe_plan, plan_reasons
+from .explain import (
+    MIN_SAMPLES_FOR_UNCERTAINTY,
+    compare,
+    confidence,
+    deltas_vs_baseline,
+    describe_plan,
+    plan_reasons,
+)
 
 
 @dataclass
@@ -98,9 +105,11 @@ def recommend(
     depth_reached = 0
     budget = s.latency_budget_ms / 1000.0
 
+    budget_cuts: list[str] = []
     for depth in range(s.D):
-        if time.perf_counter() - t0 > budget * 0.6:
+        if not s.deterministic and time.perf_counter() - t0 > budget * 0.6:
             notes.append(f"latency budget: stopped deepening at depth {depth}")
+            budget_cuts.append(f"depth {depth}")
             break
         expansions: list[PlanNode] = []
         for node in beam:
@@ -152,6 +161,10 @@ def recommend(
         ok = True
         for a in acts:
             vs = check_all(static_rules, st, a)
+            departed = [f for f in a.target_flights if f in base_res.legs and base_res.legs[f].status == "PAST"]
+            if departed:
+                vs = [*vs, Violation("H0", "flight already departed: " + ", ".join(
+                    f"{f} at {fmt_time(base_res.legs[f].dep or instance.flight(f).std)}" for f in departed))]
             if vs:
                 a.feasibility.status = "infeasible"
                 a.feasibility.reasons = [str(v) for v in vs]
@@ -193,9 +206,13 @@ def recommend(
     elapsed = time.perf_counter() - t0
     per_eval = max(elapsed / max(1, len(seen)), 0.002)
     affordable = int((budget - elapsed) / max(per_eval * len(finalists), 1e-6))
-    if affordable < n_samples:
+    if affordable < n_samples and not s.deterministic:
         n_samples = max(1, affordable)
         notes.append(f"latency budget: scenarios reduced to S={n_samples}")
+        budget_cuts.append(f"S {n_samples}")
+    if n_samples < MIN_SAMPLES_FOR_UNCERTAINTY:
+        notes.append(f"uncertainty not evaluated: only {n_samples} sampled future(s) fitted in the latency budget "
+                     "(set search.deterministic or a larger latency_budget_ms for the full readout)")
     samples = sample_scenarios(instance, n_samples, seed=seed)
     for n in finalists:
         for smp in samples:
@@ -228,6 +245,31 @@ def recommend(
         return NISResult(total=st.mean + tail * w, by_level=lv, by_term=by_term)
 
     final = rank_plans([(n, mean_nis(n)) for n in finalists], config)
+
+    # the returned top-N must differ in *what* is done to the schedule: plans whose only difference is the
+    # spare tail chosen for a swap collapse into the best of them, the others become listed alternatives
+    def decision_signature(n: PlanNode) -> str:
+        parts = []
+        for a in n.actions:
+            if a.type == "SWAP":
+                parts.append(f"SWAP:{'+'.join(sorted(a.target_flights))}")
+            elif a.type == "DELAY":
+                parts.append(f"DELAY:{'+'.join(sorted(a.target_flights))}:{a.params.get('delay_min')}")
+            else:
+                parts.append(f"{a.type}:{'+'.join(sorted(a.target_flights))}")
+        return "|".join(sorted(parts))
+
+    collapsed: list[tuple[PlanNode, NISResult]] = []
+    sig_seen: dict[str, PlanNode] = {}
+    for n, r in final:
+        sig = decision_signature(n)
+        keeper = sig_seen.get(sig)
+        if keeper is None or n in whatif_nodes:
+            sig_seen.setdefault(sig, n)
+            collapsed.append((n, r))
+        else:
+            equivalents.setdefault(keeper.key, []).append(n)
+    final = collapsed
 
     # hysteresis: keep the previous top unless the new one is clearly better
     if previous_top_key and len(final) > 1 and s.hysteresis_pct > 0:
@@ -302,4 +344,7 @@ def recommend(
         plans_evaluated=len(seen),
         depth_reached=depth_reached,
         whatif=whatif_plans,
+        effective={"samples": len(samples), "depth": depth_reached, "candidates_per_node": s.M,
+                   "deterministic": s.deterministic, "budget_cuts": budget_cuts,
+                   "surrogate": surrogate is not None},
     )

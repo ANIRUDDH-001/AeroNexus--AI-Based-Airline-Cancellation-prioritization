@@ -294,6 +294,15 @@ class Instance(BaseModel):
     def from_json(cls, text: str) -> Instance:
         return cls.model_validate_json(text)
 
+    def content_hash(self) -> str:
+        """16-hex-char SHA-256 of the day's content (flights, fleet, crews, itineraries, airports, disruptions).
+        Stored on every run: if the day is edited afterwards the hash no longer matches and the run is
+        known to be non-reproducible from the current state."""
+        import hashlib
+
+        payload = self.model_dump_json(exclude={"metadata"})
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
     def summary(self) -> dict[str, Any]:
         return {
             "name": self.name,
@@ -373,6 +382,8 @@ class Run(BaseModel):
     plans_evaluated: int = 0
     depth_reached: int = 0
     whatif: list[Plan] = Field(default_factory=list)  # caller-supplied plans, always returned with their rank
+    instance_hash: str | None = None  # content hash of the day the run saw (edits change it; see instance_hash())
+    effective: dict[str, Any] = Field(default_factory=dict)  # what the search actually used: samples, depth, deterministic
 
 
 class Decisions(BaseModel):

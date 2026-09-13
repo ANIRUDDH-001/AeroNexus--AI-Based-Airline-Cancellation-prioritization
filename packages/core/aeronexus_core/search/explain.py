@@ -91,11 +91,14 @@ def plan_reasons(m: Metrics, res: SimResult, inst: Instance, actions: list[Actio
     forced = [fid for fid in res.forced_ids()]
     if not actions:
         reasons.append("No action taken (do nothing).")
+    # passengers on the flights this plan cancels, separately from those on flights that cancel anyway
+    decided_pax = sum(inst.flight(f).booked_pax for f in decided if f in inst.flights_by_id)
+    forced_pax = sum(inst.flight(f).booked_pax for f in forced if f in inst.flights_by_id)
     if decided:
-        reasons.append(f"Cancels {len(decided)} flight(s) affecting {int(m.pax_cancelled)} passengers.")
+        reasons.append(f"Cancels {len(decided)} flight(s) carrying {decided_pax} passengers.")
     if forced:
         nums = ", ".join(inst.flight(f).number for f in forced[:4]) + (" …" if len(forced) > 4 else "")
-        reasons.append(f"Forces {len(forced)} downstream cancellation(s): {nums}.")
+        reasons.append(f"Forces {len(forced)} downstream cancellation(s) ({forced_pax} passengers): {nums}.")
     else:
         reasons.append("No downstream cancellations forced.")
     if m.pax_cancelled or m.misconnects:
@@ -147,21 +150,31 @@ def deltas_vs_baseline(m: Metrics, base: Metrics) -> dict[str, float]:
     return out
 
 
+MIN_SAMPLES_FOR_UNCERTAINTY = 3
+
+
 def confidence(feasible_share: float, stability: float | None, mean: float, p90: float, samples: int,
                data_age_min: int | None) -> dict[str, Any]:
+    """Four-part readout. With fewer than MIN_SAMPLES_FOR_UNCERTAINTY sampled futures (a latency-budget
+    cut on a slow machine) the stability and sensitivity fields are reported as *not evaluated* rather than
+    as a confident-looking 100 % / "low" computed from one draw."""
     feas = "certain" if feasible_share >= 0.999 else "probable" if feasible_share >= 0.8 else "marginal"
-    sens = (p90 - mean) / mean if mean > 0 else 0.0
-    sens_label = "low" if sens < 0.15 else "moderate" if sens < 0.5 else "high"
+    evaluated = samples >= MIN_SAMPLES_FOR_UNCERTAINTY
+    sens = (p90 - mean) / mean if (mean > 0 and evaluated) else None
+    sens_label = None if sens is None else "low" if sens < 0.15 else "moderate" if sens < 0.5 else "high"
     stab_label = None
-    if stability is not None:
-        stab_label = "stable" if stability >= 0.8 else "sensitive" if stability >= 0.5 else "unstable"
+    if stability is not None and evaluated:
+        # stability = share of sampled futures in which this plan is the best of the finalists; a plan that is
+        # merely dominated by a near-identical one scores 0 and is labelled "dominated", not "unstable"
+        stab_label = "stable" if stability >= 0.8 else "sensitive" if stability >= 0.5 else "dominated" if stability == 0 else "unstable"
     return {
         "feasibility": feas,
         "feasible_share": round(feasible_share, 3),
         "data_freshness_min": data_age_min,
-        "stability": stability,
-        "stability_label": stab_label,
-        "scenario_sensitivity": round(sens, 3),
-        "scenario_sensitivity_label": sens_label,
+        "stability": stability if evaluated else None,
+        "stability_label": stab_label if evaluated else "not evaluated",
+        "scenario_sensitivity": round(sens, 3) if sens is not None else None,
+        "scenario_sensitivity_label": sens_label if evaluated else "not evaluated",
         "samples": samples,
+        "uncertainty_evaluated": evaluated,
     }

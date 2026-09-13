@@ -112,6 +112,7 @@ class SearchSettings(BaseModel):
     forced_cancel_delay_min: int = Field(default=300, ge=0, description="propagation: a leg that cannot depart within this delay is a forced cancellation")
     standby_hold_min: int = Field(default=120, ge=0, description="max extra wait for a standby crew call-out before the leg is forced-cancelled")
     post_flight_duty_min: int = Field(default=30, ge=0, description="duty minutes after final on-blocks counted inside the FDP")
+    deterministic: bool = Field(default=False, description="audit mode: never trade samples or depth for latency, so the same inputs always give the same answer (excluded from the config hash)")
 
 
 class EngineConfig(BaseModel):
@@ -163,7 +164,7 @@ def _strip(obj: Any) -> Any:
 
 
 def canonical_json(config: EngineConfig) -> str:
-    payload = config.model_dump(mode="json", exclude={"preset_name"})
+    payload = config.model_dump(mode="json", exclude={"preset_name": True, "search": {"deterministic"}})
     return json.dumps(_strip(payload), sort_keys=True, separators=(",", ":"), ensure_ascii=True)
 
 
@@ -209,7 +210,7 @@ def load_config(config_dir: str | Path, preset: str | None = None) -> EngineConf
 def save_config(config: EngineConfig, config_dir: str | Path, as_preset: str | None = None) -> Path:
     """Write the config back as YAML. With ``as_preset`` writes a single presets/<name>.yaml file."""
     d = Path(config_dir)
-    payload = config.model_dump(mode="json", exclude={"preset_name"})
+    payload = config.model_dump(mode="json", exclude={"preset_name": True, "search": {"deterministic"}})
     if as_preset:
         d = d / "presets"
         d.mkdir(parents=True, exist_ok=True)
