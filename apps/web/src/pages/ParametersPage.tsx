@@ -76,7 +76,7 @@ export function ParametersPage() {
     <>
       <PageTitle
         title="Parameters"
-        subtitle="Everything that can change a recommendation lives here and is versioned. Weights are placeholders (1 point ≈ ₹1,000) until tuned on the hand-crafted cases."
+        subtitle="Everything that can change a recommendation lives here and is versioned. Weights are indicative (1 point ≈ ₹1,000): they pass the hand-crafted cases but have not been calibrated on real operations. Values marked VERIFY are regulatory placeholders."
         right={
           <div className="flex items-center gap-3 text-[12px] text-ink-2">
             <span>

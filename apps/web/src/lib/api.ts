@@ -2,6 +2,8 @@
 // production points at VITE_API_URL (Render or a Cloudflare Tunnel).
 
 const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") || "/api";
+// Optional demo write key (mirrors AERONEXUS_WRITE_KEY on the API); sent on every call, ignored by open routes.
+const WRITE_KEY = (import.meta.env.VITE_API_KEY as string | undefined) || "";
 
 export class ApiError extends Error {
   constructor(public status: number, public detail: unknown) {
@@ -13,7 +15,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
-      headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+      headers: { "Content-Type": "application/json", ...(WRITE_KEY ? { "X-AeroNexus-Key": WRITE_KEY } : {}), ...(init?.headers ?? {}) },
       ...init,
     });
   } catch (e) {
@@ -84,7 +86,7 @@ async function serveStatic<T>(path: string, init: RequestInit | undefined, cause
   const nearest = (t: number) => idx.decision_times.reduce((a, b) => (Math.abs(b - t) < Math.abs(a - t) ? b : a));
   const runAt = async (t: number): Promise<Run> => {
     const run = await staticFile<Run>(`run_${nearest(t)}.json`);
-    const note = `static demo mode: precomputed recommendation at ${hhmm(nearest(t))} (${idx.generated_at})`;
+    const note = `precomputed demo: this recommendation was computed at ${hhmm(nearest(t))} on ${idx.generated_at.slice(0, 10)} — the engine is not reachable`;
     return run.notes.includes(note) ? run : { ...run, notes: [...run.notes, note] };
   };
   const tablePrefix = `/data/instances/${STATIC_ID}/table/`;
@@ -107,14 +109,18 @@ async function serveStatic<T>(path: string, init: RequestInit | undefined, cause
   if (p === "/cases") return staticFile<T>("case_defs.json");
   if (p === "/cases/latest" || p === "/cases/run") return staticFile<T>("cases.json");
   if (p === "/benchmark/latest") return staticFile<T>("benchmark.json");
-  throw new ApiError(503, "Static demo mode - the API is unreachable, so this action is unavailable. Start the API (or wake the hosted one) and retry.");
+  throw new ApiError(503, "Precomputed demo mode: the engine is not reachable, so this action cannot run. Once the API is back, reload and retry.");
 }
 
 const json = (body: unknown) => JSON.stringify(body);
 
 // ---------------------------------------------------------------- types
 
-export type Health = { status: string; engine_version: string; config_hash: string; config_version: number; narration_enabled: boolean };
+export type Health = {
+  status: string; engine_version: string; config_hash: string; config_version: number; narration_enabled: boolean;
+  narration?: { mode: string; model: string | null; calls: number; accepted: number; rejected: number; failed: number; last_error: string | null };
+  write_key_required?: boolean;
+};
 
 export type InstanceSummary = {
   name: string; size: string; seed: number | null; day_start: string; airports: number; hubs: number; aircraft: number;
@@ -143,7 +149,10 @@ export type Timeline = {
 };
 
 export type Action = { type: "CANCEL_LEG" | "CANCEL_CYCLE" | "DELAY" | "SWAP" | "WAIT"; target_flights: string[]; params?: Record<string, unknown>; feasibility?: { status: string; reasons: string[] }; metrics?: Record<string, number> };
-export type Confidence = { feasibility: string; feasible_share: number; data_freshness_min: number | null; stability: number | null; stability_label: string | null; scenario_sensitivity: number; scenario_sensitivity_label: string; samples: number };
+export type Confidence = {
+  feasibility: string; feasible_share: number; data_freshness_min: number | null; stability: number | null; stability_label: string | null;
+  scenario_sensitivity: number | null; scenario_sensitivity_label: string | null; samples: number; uncertainty_evaluated?: boolean;
+};
 export type Comparison = { verdict: string; differences: string[]; margin: number };
 export type Plan = {
   actions: Action[]; metrics: Record<string, number>; nis: number; nis_breakdown: Record<string, number>;
@@ -154,8 +163,9 @@ export type Plan = {
 export type Run = {
   id: string; created_at: string; decision_time: number; instance_name: string; config_hash: string; engine_version: string; plans: Plan[]; excluded: Action[]; latency_ms: number;
   accepted_plan: number | null; override_reason: string | null; narrative: string | null; notes: string[]; at_risk: AtRisk[]; baseline_metrics: Record<string, number>; plans_evaluated: number; depth_reached: number; whatif: Plan[];
+  instance_hash?: string | null; effective?: { samples: number; depth: number; candidates_per_node: number; deterministic: boolean; budget_cuts: string[]; surrogate: boolean };
 };
-export type RunRow = { id: string; created_at: string; instance_id: string; decision_time: number; config_hash: string; engine_version: string; accepted_plan: number | null; override_reason: string | null; latency_ms: number | null; top_plan: string[]; top_nis: number | null; at_risk: number; plans_evaluated: number | null };
+export type RunRow = { id: string; created_at: string; instance_id: string; decision_time: number; config_hash: string; engine_version: string; accepted_plan: number | null; override_reason: string | null; latency_ms: number | null; top_plan: string[]; top_nis: number | null; at_risk: number; plans_evaluated: number | null; instance_hash?: string | null; effective?: { samples?: number; depth?: number } };
 
 export type Table = { entity: string; key: string; columns: string[]; attribute_columns: string[]; rows: Record<string, unknown>[] };
 

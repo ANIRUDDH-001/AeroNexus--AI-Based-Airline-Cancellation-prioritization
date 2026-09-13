@@ -15,20 +15,29 @@ const OVERRIDE_REASONS = ["Crew preference", "Commercial priority", "Operational
 
 function ConfidenceChips({ p }: { p: Plan }) {
   const c = p.explanation.confidence;
+  const evaluated = c.uncertainty_evaluated ?? c.samples >= 3;
   const feasTone = c.feasibility === "certain" ? "ok" : c.feasibility === "probable" ? "warn" : "bad";
-  const stabTone = c.stability_label === "stable" ? "ok" : c.stability_label === "sensitive" ? "warn" : c.stability_label ? "bad" : "gray";
+  const stabTone = c.stability_label === "stable" ? "ok" : c.stability_label === "sensitive" ? "warn" : c.stability_label === "dominated" ? "gray" : c.stability_label ? "bad" : "gray";
   const sensTone = c.scenario_sensitivity_label === "low" ? "ok" : c.scenario_sensitivity_label === "moderate" ? "warn" : "bad";
   return (
     <div className="flex flex-wrap gap-1.5">
-      <Tag tone={feasTone} title={`feasible in ${Math.round(c.feasible_share * 100)}% of ${c.samples} sampled futures`}>
+      <Tag tone={feasTone} title={`feasible in ${Math.round(c.feasible_share * 100)}% of ${c.samples} sampled future(s)`}>
         feasibility: {c.feasibility}
       </Tag>
-      <Tag tone={stabTone} title="share of sampled futures in which this plan is the best">
-        {c.stability_label ? `stability: ${c.stability_label} (${Math.round((c.stability ?? 0) * 100)}%)` : "stability: n/a"}
-      </Tag>
-      <Tag tone={sensTone} title="(P90 − mean) / mean across sampled futures">
-        scenario sensitivity: {c.scenario_sensitivity_label}
-      </Tag>
+      {evaluated ? (
+        <>
+          <Tag tone={stabTone} title="share of sampled futures in which this plan is the best of the finalists; 'dominated' = a near-identical plan always edges it out">
+            stability: {c.stability_label} ({Math.round((c.stability ?? 0) * 100)}%)
+          </Tag>
+          <Tag tone={sensTone} title="(P90 − mean) / mean across sampled futures">
+            scenario sensitivity: {c.scenario_sensitivity_label}
+          </Tag>
+        </>
+      ) : (
+        <Tag tone="warn" title="Fewer than 3 sampled futures fitted in the latency budget on this machine, so stability and sensitivity were not evaluated. Set search.deterministic for the full readout.">
+          uncertainty not evaluated ({c.samples} sample{c.samples === 1 ? "" : "s"})
+        </Tag>
+      )}
       <Tag tone="gray">{c.data_freshness_min == null ? "data: synthetic day" : `data age ${c.data_freshness_min} min`}</Tag>
     </div>
   );
@@ -195,7 +204,12 @@ export function RecommendationsPage() {
   };
   const decide = async (accepted: number | null, reason: string | null) => {
     if (!run) return;
-    setRun(await api.decide(run.id, { accepted_plan: accepted, override_reason: reason }));
+    setError(null);
+    try {
+      setRun(await api.decide(run.id, { accepted_plan: accepted, override_reason: reason }));
+    } catch (e) {
+      setError(e instanceof ApiError ? `${e.status}: ${e.message}` : String(e));
+    }
   };
   const evalWhatIf = async () => {
     if (!instanceId || !wiFlight) return;
@@ -233,7 +247,7 @@ export function RecommendationsPage() {
     <>
       <PageTitle
         title="Recommendations"
-        subtitle="The engine simulates every feasible option on the shared operational state and returns the three best plans with reasons. You decide."
+        subtitle="The engine simulates the most promising feasible options on the shared operational state, extends the best into multi-step plans, and returns the three best with reasons. You decide."
         right={
           <Button onClick={recommend} disabled={busy}>
             {busy ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} />} {run ? "Re-run" : "Recommend"}
@@ -247,7 +261,9 @@ export function RecommendationsPage() {
         <>
           <div className="mb-4 flex flex-wrap gap-3 text-[12px] text-ink-2 items-center">
             <span>
-              {run.at_risk.length} at risk · {run.plans_evaluated} plans simulated · depth {run.depth_reached} · {fmt(run.latency_ms)} ms
+              {run.at_risk.length} at risk · {run.plans_evaluated} plans simulated · depth {run.depth_reached}
+              {run.effective ? ` · ${run.effective.samples} sampled future${run.effective.samples === 1 ? "" : "s"}` : ""} · {fmt(run.latency_ms)} ms
+              {run.effective?.deterministic ? " · audit mode" : ""}
             </span>
             <span className="font-mono">config {run.config_hash}</span>
             <span className="font-mono">run {run.id}</span>
@@ -263,7 +279,14 @@ export function RecommendationsPage() {
               </Tag>
             )}
           </div>
-          {run.narrative && <p className="mb-4 text-[13px] border-l-2 border-accent pl-3 text-ink-2">{run.narrative}</p>}
+          {run.narrative && (
+            <p className="mb-4 text-[13px] border-l-2 border-accent pl-3 text-ink-2">
+              <span className="text-[11px] uppercase tracking-wide text-ink-2 mr-2" title="Reworded from the computed facts; numbers and flights are checked against them. Never part of the decision.">
+                narration
+              </span>
+              {run.narrative}
+            </p>
+          )}
           {run.plans.length === 0 && <Empty>Recommendation unavailable — no feasible plan could be evaluated.</Empty>}
           <div className="space-y-3">
             {run.plans.map((p) => (
@@ -303,7 +326,7 @@ export function RecommendationsPage() {
                 Flight
                 <select className={`${inputCls} mt-1 block w-56`} value={wiFlight} onChange={(e) => setWiFlight(e.target.value)}>
                   <option value="">— choose —</option>
-                  {(tl?.flights ?? []).filter((f) => f.std >= clock).map((f) => (
+                  {(tl?.flights ?? []).filter((f) => f.status !== "PAST" && f.status !== "CANCELLED_DECISION").map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.number} {f.origin}→{f.dest} {f.std_hhmm}
                       {f.at_risk ? " ⚠" : ""}

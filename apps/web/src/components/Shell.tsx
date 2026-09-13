@@ -69,7 +69,12 @@ export function Shell({ page, onNavigate, status, children }: { page: PageKey; o
             </label>
           </div>
         )}
-        <div className="max-w-6xl mx-auto px-6 py-8 min-w-0">{children}</div>
+        <div className="max-w-6xl mx-auto px-6 pt-3 text-[11px] text-ink-2 flex flex-wrap gap-x-3 gap-y-1" title="What you are looking at is a generated day. Tariffs and duty-time limits are indicative placeholders; every number is a simulation on synthetic data.">
+          <span className="rounded bg-hover px-1.5 py-0.5">Synthetic data</span>
+          <span className="rounded bg-hover px-1.5 py-0.5">Indicative tariffs &amp; FDTL limits</span>
+          <span className="rounded bg-hover px-1.5 py-0.5">Decision support only — the controller decides</span>
+        </div>
+        <div className="max-w-6xl mx-auto px-6 py-6 min-w-0">{children}</div>
       </main>
     </div>
   );

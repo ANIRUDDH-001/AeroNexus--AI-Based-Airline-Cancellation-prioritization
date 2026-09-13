@@ -21,7 +21,7 @@ export function RunsPage() {
     <>
       <PageTitle
         title="Runs"
-        subtitle="Every recommendation is stored with the inputs it saw, the configuration hash and the controller's decision, so any answer can be reconstructed later."
+        subtitle="Every recommendation is stored with the configuration hash, a content hash of the day it saw, what the search actually used (samples, depth) and the controller's decision. A run reproduces exactly while both hashes still match the current day and configuration."
         right={
           <Button variant="ghost" onClick={() => setAll(!all)}>
             {all ? "This day only" : "All days"}
@@ -55,9 +55,15 @@ export function RunsPage() {
                   <td>{r.top_plan.length ? r.top_plan.join(" + ") : <span className="text-ink-2">do nothing</span>}</td>
                   <td className="font-mono">{fmt(r.top_nis)}</td>
                   <td>{r.at_risk}</td>
-                  <td>{r.plans_evaluated ?? "—"}</td>
+                  <td>
+                  {r.plans_evaluated ?? "—"}
+                  {r.effective?.samples != null && <span className="text-ink-2"> · S={r.effective.samples}</span>}
+                </td>
                   <td className="font-mono">{fmt(r.latency_ms)} ms</td>
-                  <td className="font-mono text-[12px]">{r.config_hash}</td>
+                  <td className="font-mono text-[12px]">
+                  {r.config_hash}
+                  {r.instance_hash && <div className="text-ink-2">day {r.instance_hash}</div>}
+                </td>
                   <td>
                     {r.accepted_plan == null ? (
                       <Tag tone="gray">pending</Tag>
