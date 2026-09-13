@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { RefreshCw, Trash2 } from "lucide-react";
 import { api, ApiError, type InstanceRow } from "@/lib/api";
+import { useStore } from "@/lib/store";
 import { Button, PageTitle, Tag } from "@/components/Shell";
 
 export function DataPage() {
+  const { refreshInstances, setInstanceId } = useStore();
   const [rows, setRows] = useState<InstanceRow[]>([]);
   const [size, setSize] = useState<"small" | "medium" | "large">("medium");
   const [seed, setSeed] = useState(1);
@@ -25,6 +27,8 @@ export function DataPage() {
       const r = await api.generate({ size, seed, disruptions: specs });
       setIssues(r.issues);
       await load();
+      await refreshInstances();
+      setInstanceId(r.id);
     } catch (e) {
       setError(e instanceof ApiError ? `${e.status}: ${e.message}` : String(e));
     } finally {
@@ -122,7 +126,7 @@ export function DataPage() {
                 <button
                   className="text-ink-3 hover:text-bad"
                   title="Delete"
-                  onClick={() => api.deleteInstance(r.id).then(load)}
+                  onClick={() => api.deleteInstance(r.id).then(load).then(refreshInstances)}
                 >
                   <Trash2 size={14} />
                 </button>

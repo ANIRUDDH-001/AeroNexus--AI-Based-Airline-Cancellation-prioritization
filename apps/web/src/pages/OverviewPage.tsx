@@ -1,0 +1,107 @@
+import { useEffect, useState } from "react";
+import { api, fmt, type Timeline as TimelineData } from "@/lib/api";
+import { useStore } from "@/lib/store";
+import { Card, Empty, Kpi, PageTitle, Tag } from "@/components/Shell";
+import { Timeline } from "@/components/Timeline";
+
+export function OverviewPage({ onNavigate }: { onNavigate: (p: "recommendations" | "data") => void }) {
+  const { instanceId, clock } = useStore();
+  const [tl, setTl] = useState<TimelineData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!instanceId) return;
+    setError(null);
+    api.timeline(instanceId, clock).then(setTl).catch((e) => setError(String(e)));
+  }, [instanceId, clock]);
+
+  if (!instanceId)
+    return (
+      <>
+        <PageTitle title="Overview" />
+        <Empty>
+          No operational day loaded.{" "}
+          <button className="text-accent underline" onClick={() => onNavigate("data")}>
+            Generate one on the Data page.
+          </button>
+        </Empty>
+      </>
+    );
+  if (error) return <PageTitle title="Overview" subtitle={error} />;
+  if (!tl) return <PageTitle title="Overview" subtitle="Loading…" />;
+  const s = tl.summary;
+
+  return (
+    <>
+      <PageTitle title="Overview" subtitle={`Today's operation if nothing is done, propagated from ${tl.clock_hhmm}.`} />
+      <div className="grid grid-cols-6 gap-3 mb-6">
+        <Kpi label="Flights" value={s.flights} />
+        <Kpi label="At risk" value={s.at_risk} tone={s.at_risk ? "warn" : undefined} />
+        <Kpi label="Forced cancellations" value={s.forced_cancellations} tone={s.forced_cancellations ? "bad" : "ok"} />
+        <Kpi label="Delayed flights" value={s.delayed_flights} tone={s.delayed_flights ? "warn" : undefined} />
+        <Kpi label="Missed connections" value={fmt(s.misconnects)} tone={s.misconnects ? "warn" : undefined} />
+        <Kpi label="Stranded overnight" value={fmt(s.stranded_overnight)} tone={s.stranded_overnight ? "bad" : "ok"} />
+      </div>
+
+      {tl.disruptions.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2 items-center text-[13px]">
+          <span className="text-ink-2">Active disruptions:</span>
+          {tl.disruptions.map((d) => (
+            <Tag key={d.id} tone="warn" title={JSON.stringify(d.severity)}>
+              {d.type} · {d.target}
+            </Tag>
+          ))}
+          {s.at_risk > 0 && (
+            <button className="ml-auto text-accent underline" onClick={() => onNavigate("recommendations")}>
+              Get recommendation →
+            </button>
+          )}
+        </div>
+      )}
+
+      <Card className="mb-6">
+        <div className="font-medium mb-2">Rotations</div>
+        <Timeline flights={tl.flights} rotations={tl.rotations} clock={tl.clock} />
+      </Card>
+
+      <Card>
+        <div className="font-medium mb-2">At-risk flights</div>
+        {tl.at_risk.length === 0 ? (
+          <Empty>Nothing at risk at this decision time.</Empty>
+        ) : (
+          <table className="ax-table">
+            <thead>
+              <tr>
+                <th>Flight</th>
+                <th>Route</th>
+                <th>STD</th>
+                <th>Tail</th>
+                <th>Pax</th>
+                <th>Status</th>
+                <th>Why</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tl.at_risk.map((r) => {
+                const f = tl.flights.find((x) => x.id === r.flight)!;
+                return (
+                  <tr key={r.flight}>
+                    <td className="font-medium">{f.number}</td>
+                    <td>
+                      {f.origin}→{f.dest}
+                    </td>
+                    <td className="font-mono">{f.std_hhmm}</td>
+                    <td className="font-mono">{f.tail}</td>
+                    <td>{f.booked_pax}</td>
+                    <td>{r.forced ? <Tag tone="bad">cannot operate</Tag> : <Tag tone="warn">+{r.delay_min} min</Tag>}</td>
+                    <td className="text-ink-2">{r.reasons.join("; ")}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </Card>
+    </>
+  );
+}
