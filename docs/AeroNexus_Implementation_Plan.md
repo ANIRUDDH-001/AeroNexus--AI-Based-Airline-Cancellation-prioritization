@@ -3,7 +3,7 @@
 **AI-Based Cancellation Prioritization for Flight Disruptions**
 IndiGo × UPES AI Challenge · Problem Statement 01
 Team: Prachi Agarwalla, Aniruddh Vijayvargia
-Version 0.4 · September 2026 · Status: **Phase 0 complete (2026-09-11) — Phase 1 (simulator) next**
+Version 0.5 · September 2026 · Status: **Phases 0–7 complete (2026-09-11) — student track built; faculty track (§23) next**
 
 ---
 
@@ -573,15 +573,27 @@ Assumes a 10-week window and two builders (see §25 Q1/Q2). Each phase ends with
 | Phase | Weeks | Deliverable (definition of done) |
 |---|---|---|
 | **P0 Foundations** ✅ 2026-09-11 | 1 | Repo, CI, schema (§6) as Pydantic models + SQLite, registries (§15) loading from YAML, generator `small` producing a valid day; `config_hash` works. *Delivered beyond DoD:* `medium`/`large` generators, disruption templates, static constraints H4a/H4d/H5a/H5b/H6/H7/H3d/H10 live, NIS scorer with both ranking modes, API with config versioning, web shell with Data + Parameters pages, 47 tests. |
-| **P1 Simulator** | 2–3 | Propagation (§7) for aircraft + crew + passengers; incremental `apply()`; horizon; unit tests; cases 1, 5, 8 pass with a trivial "evaluate all single actions" ranker. |
-| **P2 Constraints + candidates** | 4 | Full H1–H10 (§8) as plugins with reasons; candidate generation (§9) incl. `CANCEL_CYCLE`, `SWAP`; cases 3, 4, 7, 11 pass. |
-| **P3 Score + search** | 5 | NIS registry with expressions and both ranking modes; B0/B1 baselines; beam search; light uncertainty (S); hysteresis; all 12 cases pass; latency ≤ 5 s on `medium`. |
-| **P4 API + UI core** | 5–7 (parallel) | Endpoints (§19); pages 1–5 (§18) with design system; parameters editable end-to-end (add column → term → run). |
-| **P5 ML + explanations** | 7 | Surrogate trained on generated evaluations; SHAP panel; templated reasons and counterfactuals; confidence readouts; abstain; LLM narration adapter behind flag (§14.1) with free-tier limits verified. |
-| **P6 Validation + benchmarks** | 8 | Ladder B0/B1/B2 on 200 scenarios × 6 disruption types with evaluation-config simulator; Cases & Benchmarks page; stability metric. |
-| **P7 Demo + submission** | 9–10 | Deploy (Vercel + Render/HF + Supabase); static-runs fallback; 3–5-page technical brief; 10-minute pitch with live demo; README + reproducibility script. |
+| **P1 Simulator** ✅ 2026-09-11 | 2–3 | Propagation (§7) for aircraft + crew + passengers; incremental `apply()`; horizon; unit tests; cases 1, 5, 8 pass with a trivial "evaluate all single actions" ranker. |
+| **P2 Constraints + candidates** ✅ 2026-09-11 | 4 | Full H1–H10 (§8) as plugins with reasons; candidate generation (§9) incl. `CANCEL_CYCLE`, `SWAP`; cases 3, 4, 7, 11 pass. |
+| **P3 Score + search** ✅ 2026-09-11 | 5 | NIS registry with expressions and both ranking modes; B0/B1 baselines; beam search; light uncertainty (S); hysteresis; all 12 cases pass; latency ≤ 5 s on `medium`. |
+| **P4 API + UI core** ✅ 2026-09-11 | 5–7 (parallel) | Endpoints (§19); pages 1–5 (§18) with design system; parameters editable end-to-end (add column → term → run). |
+| **P5 ML + explanations** ✅ 2026-09-11 | 7 | Surrogate trained on generated evaluations; SHAP panel; templated reasons and counterfactuals; confidence readouts; abstain; LLM narration adapter behind flag (§14.1) with free-tier limits verified. |
+| **P6 Validation + benchmarks** ✅ 2026-09-11 | 8 | Ladder B0/B1/B2 on 200 scenarios × 6 disruption types with evaluation-config simulator; Cases & Benchmarks page; stability metric. |
+| **P7 Demo + submission** ✅ 2026-09-11 (deploy configs, fallback, brief; live hosting + pitch rehearsal remain manual steps) | 9–10 | Deploy (Vercel + Render/HF + Supabase); static-runs fallback; 3–5-page technical brief; 10-minute pitch with live demo; README + reproducibility script. |
 
 Weekly ritual: Monday scope check against this document; Friday demo of the phase's DoD.
+
+**Delivery notes (2026-09-11).** All seven phases were built in one continuous pass on the student track.
+Deviations from the DoD above, stated plainly: (a) the ladder was run on 30 and 200 generated scenarios (mixed
+disruption types, `data/benchmarks/`) rather than a fixed 200 × 6 grid — the script takes `--scenarios`; (b) the
+"stability metric" is the per-plan stability in the confidence readout plus the hysteresis rule, not a separate
+ladder column; (c) LLM narration is implemented as an adapter with the §14.1 contract but no provider key is
+configured, so it stays off; (d) hosting on Render/Vercel is configured (`render.yaml`, `apps/web/vercel.json`,
+`docs/deploy.md`) but the actual accounts, the tunnel and the pitch rehearsal are manual steps for the team.
+Two engine fixes came out of the 200-scenario ladder: "do nothing" is now always a finalist (the nominal
+cut-off had dropped it, so an intervention could win the sampled comparison unopposed), and overlapping
+cancellations in one plan are presented as a single "cancel N legs" label. FDTL and DGCA compensation values
+remain marked VERIFY.
 
 **Roles (decided)**: *Engine owner* — `packages/core`, `packages/datagen`, `packages/ml`, benchmark scripts. *Product owner* — `apps/api`, `apps/web`, `data/cases`, technical brief, deployment. Both review the simulator design (P1) and the constraint catalogue (P2) together before code.
 

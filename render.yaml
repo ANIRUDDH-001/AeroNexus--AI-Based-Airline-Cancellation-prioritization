@@ -1,0 +1,27 @@
+# Render Blueprint (Plan §20): the AeroNexus API as a free web service.
+# Storage MUST be Supabase Postgres - the free instance's disk resets on every spin-down.
+# 1. Render dashboard -> New -> Blueprint -> pick this repo.
+# 2. Set AERONEXUS_DB_URL (Supabase pooler URL, postgresql+psycopg://...) and AERONEXUS_CORS (your Vercel URL).
+# 3. The first request after ~15 min idle takes ~1 min (cold start) - pre-warm before a demo (GET /health).
+services:
+  - type: web
+    name: aeronexus-api
+    runtime: python
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: pip install --upgrade pip && pip install -e packages/core -e packages/datagen -e "packages/ml[boost]" -e apps/api
+    startCommand: uvicorn aeronexus_api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: AERONEXUS_DB_URL
+        sync: false            # set in the dashboard; never commit it
+      - key: AERONEXUS_CORS
+        value: https://aeronexus.vercel.app
+      - key: NARRATION_ENABLED
+        value: "false"
+      - key: WEB_CONCURRENCY
+        value: "1"             # 512 MB instance: one worker, the engine is CPU-bound anyway
