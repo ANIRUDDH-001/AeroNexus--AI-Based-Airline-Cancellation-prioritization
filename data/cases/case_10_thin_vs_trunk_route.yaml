@@ -1,0 +1,32 @@
+id: case_10_thin_vs_trunk_route
+title: Thin route vs trunk route - re-accommodation decides
+rationale: >
+  Two crews become unavailable at Delhi and one standby remains, so one of F1 (DEL-JAI 06:00, the only Jaipur
+  flight of the day, 100 pax) and F3 (DEL-BOM 09:15, 130 pax, with F5 DEL-BOM at 10:00 carrying 80 spare
+  seats) must lose its crew. Cancelling the Mumbai cycle costs less because most of its passengers
+  re-accommodate onto F5/F6 within the hour (160 of 270; 110 stranded); cancelling the Jaipur cycle
+  strands all 200 passengers with no alternative flight. Keep the thin
+  route, cancel the trunk cycle.
+instance:
+  base: tiny
+  patches:
+    crews:
+      C1: {duty_start: 330}
+    flights:
+      F3: {pax_connecting: 0, booked_pax: 130}
+      F2: {pax_connecting: 0, booked_pax: 100}
+    itineraries:
+      I2: {pax_count: 100}
+      I3: {pax_count: 130}
+  remove:
+    itineraries: [I23]
+    aircraft: [T3]
+disruptions:
+  - crew:DEL:2:320
+decision_time: 315
+expected:
+  top1: {type: CANCEL_CYCLE, target_flights: [F3, F4]}
+  plan_metrics:
+    - {metric: pax_stranded_overnight, op: "<=", value: 120}
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+tolerances: {max_latency_ms: 5000}

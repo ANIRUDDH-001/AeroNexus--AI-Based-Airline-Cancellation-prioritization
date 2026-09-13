@@ -1,0 +1,38 @@
+id: case_01_heavy_vs_light
+title: Heavy vs light flight on one rotation
+rationale: >
+  T1 flies a light feeder cycle (DEL-JAI-DEL, 40 + 45 pax) before a full trunk cycle (DEL-BOM-DEL, 180 + 170 pax).
+  Jaipur closes 06:30-09:30, so the feeder returns 2.5 h late and pushes the trunk flight into Mumbai's
+  13:00-17:00 curfew: waiting for the curfew to end would exceed the delay cap, so both trunk legs
+  would be force-cancelled (350 pax). No spare aircraft exists: T3 is removed and T2 is already airborne
+  on F5 (09:00) when the trunk flight needs an aircraft.
+  Cancelling the light feeder cycle early keeps T1 at Delhi and protects the trunk rotation: 85 passengers
+  lose their flight instead of 350. Cancelling only F1 would strand the aircraft at Delhi anyway but
+  turn F2 into a forced cancellation, so the cycle is the clean decision.
+instance:
+  base: tiny
+  patches:
+    flights:
+      F1: {booked_pax: 40}
+      F2: {booked_pax: 45, pax_connecting: 0}
+      F3: {booked_pax: 180, pax_connecting: 0}
+      F4: {booked_pax: 170}
+      F5: {std: 540, sta: 660}
+    airports:
+      BOM: {curfew_windows: [{start: 780, end: 1020}]}
+    itineraries:
+      I1: {pax_count: 40}
+      I2: {pax_count: 45}
+      I3: {pax_count: 180}
+      I4: {pax_count: 170}
+  remove:
+    aircraft: [T3]
+    itineraries: [I23]
+disruptions:
+  - closure:JAI:390:180
+decision_time: 300
+expected:
+  top1: {type: CANCEL_CYCLE, target_flights: [F1, F2]}
+  plan_metrics:
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+tolerances: {max_latency_ms: 5000}

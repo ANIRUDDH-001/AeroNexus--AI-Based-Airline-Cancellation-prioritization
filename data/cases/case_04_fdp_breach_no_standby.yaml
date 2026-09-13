@@ -1,0 +1,22 @@
+id: case_04_fdp_breach_no_standby
+title: Crew FDP breach with no standby
+rationale: >
+  Same delay as case 3 but the standby pool is empty. F3 cannot legally be crewed, and once it does not fly
+  the aircraft never reaches Mumbai for F4. The clean decision is an early, explicit cancellation of the
+  F3/F4 cycle so passengers can be re-accommodated onto F5/F6, rather than letting both become forced
+  cancellations at the gate. A further delay on F3 is not even a candidate: it already exceeds the delay bound.
+instance:
+  base: tiny
+  patches:
+    crews:
+      C2: {duty_start: 60}
+  remove:
+    crews: [S1]
+disruptions:
+  - delay:F3:240
+decision_time: 480
+expected:
+  top1: {type: CANCEL_CYCLE, target_flights: [F3, F4]}
+  plan_metrics:
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+tolerances: {max_latency_ms: 5000}

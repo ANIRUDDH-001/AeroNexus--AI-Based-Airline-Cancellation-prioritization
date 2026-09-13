@@ -1,0 +1,18 @@
+id: case_11_cat3_in_fog
+title: CAT-III qualification is the binding constraint
+rationale: >
+  Delhi goes into low-visibility procedures 08:30-12:30. Crew C2 (F3/F4) is not CAT-III qualified, crews C1
+  and C3 are. The engine must recognise that the constraint is qualification, not duty time: the CAT-III
+  standby S1 takes F3 and F4, nothing is cancelled, and F3 departs on time inside the fog. Doing nothing is
+  the right decision - the standby call-out happens inside the propagation.
+instance:
+  base: tiny
+disruptions:
+  - fog:DEL:510:240:0.5
+decision_time: 480
+expected:
+  top1: []
+  plan_metrics:
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+    - {metric: crew_standby_used, op: "==", value: 1}
+tolerances: {max_latency_ms: 5000}

@@ -1,0 +1,35 @@
+id: case_02_connector_vs_local
+title: Connector vs local flight
+rationale: >
+  Two crews at Delhi become unavailable at 08:00 and only one standby exists, so exactly one of F3 (DEL-BOM
+  09:15, 60 local + 40 connecting passengers) and F5 (DEL-BOM 10:00, 90 local) can be crewed. The right
+  call protects the connections: keep F3, and cancel the F5/F6 cycle explicitly so its passengers are
+  re-accommodated early instead of being force-cancelled at the gate. The engine may additionally hold F3
+  so that F5's passengers can be moved onto it - that is a legitimate refinement, not a different decision.
+instance:
+  base: tiny
+  patches:
+    flights:
+      F3: {booked_pax: 100, pax_connecting: 40}
+      F2: {booked_pax: 120, pax_connecting: 40}
+      F5: {booked_pax: 90}
+      F6: {booked_pax: 90}
+    itineraries:
+      I2: {pax_count: 80}
+      I23: {pax_count: 40}
+      I3: {pax_count: 60}
+      I5: {pax_count: 90}
+      I6: {pax_count: 90}
+  remove:
+    aircraft: [T3]
+disruptions:
+  - crew:DEL:2:480
+decision_time: 420
+expected:
+  must_include:
+    - {type: CANCEL_CYCLE, target_flights: [F5, F6]}
+  must_not_cancel: [F3, F2]
+  plan_metrics:
+    - {metric: misconnects, op: "==", value: 0}
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+tolerances: {max_latency_ms: 5000}

@@ -1,0 +1,17 @@
+id: case_06_capacity_cut
+title: Airport capacity cut - which movement to remove
+rationale: >
+  Delhi loses departure capacity from 09:00 to 14:30 (closure). F3 (09:15) would wait 5 h 15 - beyond the
+  cancellation cap - so it cannot operate, and F4 with it; F5 (10:00) waits 4.5 h and still flies. The lowest
+  impact decision removes the F3/F4 cycle explicitly (its passengers re-accommodate onto the delayed F5/F6)
+  rather than letting the cascade decide. Swapping aircraft changes nothing: the constraint is the runway.
+instance:
+  base: tiny
+disruptions:
+  - closure:DEL:540:330
+decision_time: 480
+expected:
+  top1: {type: CANCEL_CYCLE, target_flights: [F3, F4]}
+  plan_metrics:
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+tolerances: {max_latency_ms: 5000}

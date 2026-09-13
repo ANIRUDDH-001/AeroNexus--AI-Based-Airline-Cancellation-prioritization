@@ -1,0 +1,22 @@
+id: case_12_crew_shortage_day
+title: Crew-shortage day - several crews time out at once
+rationale: >
+  Three rostered crews at Delhi become unavailable at 04:10 and only one standby exists. F1/F2 (C1), F3/F4
+  (C2) and F5/F6 (C3) all need crews; at most one cycle can be saved. The standby goes to the cycle that
+  carries the most passengers and connections (F3/F4). The standby would otherwise be consumed by the first
+  departure (F1), so F1/F2 must be cancelled explicitly to free it, and the F5/F6 cycle cancelled early
+  and explicitly so their passengers are re-accommodated onto whatever still flies. The naive rule cancels
+  by passenger count and leaves the rest to be forced at the gate.
+instance:
+  base: tiny
+disruptions:
+  - crew:DEL:3:250
+decision_time: 320
+expected:
+  must_include:
+    - {type: CANCEL_CYCLE, target_flights: [F1, F2]}
+    - {type: CANCEL_CYCLE, target_flights: [F5, F6]}
+  must_not_cancel: [F3, F4]
+  plan_metrics:
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+tolerances: {max_latency_ms: 5000}

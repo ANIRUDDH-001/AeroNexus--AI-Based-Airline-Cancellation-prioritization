@@ -1,0 +1,20 @@
+id: case_03_fdp_breach_with_standby
+title: Crew FDP breach with a standby available
+rationale: >
+  A 4-hour known delay on F3 pushes crew C2 (who reported at 01:00) past their FDP. A CAT-III standby crew
+  sits at Delhi, so the correct response is to do nothing structural: the standby takes over F3 and F4 and
+  every flight still operates. Cancelling or delaying further would only add cost.
+instance:
+  base: tiny
+  patches:
+    crews:
+      C2: {duty_start: 60}
+disruptions:
+  - delay:F3:240
+decision_time: 480
+expected:
+  top1: []
+  plan_metrics:
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+    - {metric: crew_standby_used, op: "==", value: 1}
+tolerances: {max_latency_ms: 5000}

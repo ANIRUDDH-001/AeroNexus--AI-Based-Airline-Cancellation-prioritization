@@ -29,9 +29,20 @@ expected:
     - {type: CANCEL_LEG, target_flights: [6E2001]}
   must_exclude:          # candidates that must be reported infeasible, with the constraint id
     - {type: DELAY, target_flights: [6E2005], params: {delay_min: 180}, constraint: H4a}
+  must_include:          # actions the top-1 plan must contain (order-free; extra actions allowed)
+    - {type: CANCEL_CYCLE, target_flights: [6E2001, 6E2002]}
+  must_not_cancel: [6E2003]      # flights that must operate (neither decided nor forced cancellations)
+  top1_any_of_types: [CANCEL_CYCLE, CANCEL_LEG]   # weaker match on action types only
+  plan_metrics:          # bounds on the top-1 plan's simulated metrics
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
 tolerances:
   max_latency_ms: 5000
 ```
+
+`instance` also accepts `add: {flights: [...], crews: [...], itineraries: [...]}` and
+`remove: {aircraft: [tail], crews: [id]}`; `top1: []` means "do nothing" is the expected answer.
+Run the suite with `python -m aeronexus_core.cases` or `pytest tests/test_cases.py`; the Cases page runs it
+on the current configuration.
 
 ## The twelve cases
 

@@ -1,0 +1,30 @@
+id: case_09_cross_midnight
+title: Tonight's choice vs tomorrow's first wave
+rationale: >
+  A late evening cycle F7/F8 (DEL-BOM 21:00, BOM-DEL 23:30 arriving 01:30) on spare aircraft T3 is hit by a
+  2-hour known delay on F7. F8 would then depart Mumbai after its 00:30-06:00 curfew begins, so the cycle
+  would strand T3 in Mumbai and leave Delhi one aircraft short for the morning wave. Cancelling the whole
+  cycle keeps T3 in position at Delhi (next-wave shortfall 0).
+instance:
+  base: tiny
+  add:
+    flights:
+      - {id: F7, number: F7, origin: DEL, dest: BOM, std: 1260, sta: 1380, block_min: 120, aircraft_type: A320, tail: T3, crew_id: C4, seats: 180, booked_pax: 150}
+      - {id: F8, number: F8, origin: BOM, dest: DEL, std: 1410, sta: 1530, block_min: 120, aircraft_type: A320, tail: T3, crew_id: C4, seats: 180, booked_pax: 120}
+    crews:
+      - {id: C4, base: DEL, type_ratings: [A320], special_quals: [CAT3], duty_start: 1200, fdp_limit_min: 660, location: DEL, pairing: [F7, F8]}
+    itineraries:
+      - {id: I7, legs: [F7], pax_count: 150}
+      - {id: I8, legs: [F8], pax_count: 120}
+  patches:
+    airports:
+      BOM: {curfew_windows: [{start: 1470, end: 1800}]}
+disruptions:
+  - delay:F7:120
+decision_time: 1140
+expected:
+  top1: {type: CANCEL_CYCLE, target_flights: [F7, F8]}
+  plan_metrics:
+    - {metric: next_wave_shortfall, op: "==", value: 0}
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+tolerances: {max_latency_ms: 5000}

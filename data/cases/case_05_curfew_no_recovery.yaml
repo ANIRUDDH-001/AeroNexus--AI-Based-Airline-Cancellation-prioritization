@@ -1,0 +1,25 @@
+id: case_05_curfew_no_recovery
+title: Curfew that no delay can recover
+rationale: >
+  F3 carries a known 60-minute delay and now arrives in Mumbai at 12:15, fifteen minutes before a
+  12:30-14:30 curfew. It must keep moving: any further delay (the 120 and 180 minute options) would push the
+  arrival into the curfew, and those options must be ruled out by the curfew constraint rather than
+  scored. With F3 still flying, nothing needs to be cancelled - the right decision is to do nothing.
+instance:
+  base: tiny
+  patches:
+    airports:
+      BOM: {curfew_windows: [{start: 750, end: 870}]}
+disruptions:
+  - delay:F3:60
+decision_time: 480
+expected:
+  top1: []
+  must_exclude:
+    - {type: DELAY, target_flights: [F3], params: {delay_min: 120}, constraint: H4a}
+    - {type: DELAY, target_flights: [F3], params: {delay_min: 180}, constraint: H4a}
+  must_not_cancel: [F3, F4]
+  plan_metrics:
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+    - {metric: cancellations, op: "==", value: 0}
+tolerances: {max_latency_ms: 5000}

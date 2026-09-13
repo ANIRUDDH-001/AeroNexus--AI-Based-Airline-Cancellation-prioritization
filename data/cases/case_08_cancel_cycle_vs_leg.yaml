@@ -1,0 +1,25 @@
+id: case_08_cancel_cycle_vs_leg
+title: Cancel the cycle, not the leg
+rationale: >
+  Jaipur is closed from 06:30 to 12:10, so the DEL-JAI feeder F1 cannot depart within the cancellation cap.
+  Cancelling F1 alone leaves T1 at Delhi with F2 (JAI-DEL) stranded at Jaipur as a forced cancellation;
+  cancelling the F1/F2 cycle gives the same aircraft position with an orderly, early cancellation of both
+  legs. Same passengers lost, no uncontrolled forced cancellation.
+instance:
+  base: tiny
+  remove:
+    itineraries: [I23]
+  patches:
+    flights:
+      F2: {pax_connecting: 0, booked_pax: 100}
+      F3: {pax_connecting: 0, booked_pax: 130}
+    itineraries:
+      I3: {pax_count: 130}
+disruptions:
+  - closure:JAI:390:340
+decision_time: 300
+expected:
+  top1: {type: CANCEL_CYCLE, target_flights: [F1, F2]}
+  plan_metrics:
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+tolerances: {max_latency_ms: 5000}

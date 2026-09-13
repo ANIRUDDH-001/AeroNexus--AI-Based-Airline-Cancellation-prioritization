@@ -1,0 +1,18 @@
+id: case_07_aog_outstation_spare_at_hub
+title: AOG with a spare aircraft at the hub
+rationale: >
+  T1 goes technical at 08:20 after landing back in Delhi. Its remaining cycle F3/F4 (150 + 140 pax) has no
+  aircraft, but spare T3 is parked at Delhi. Swapping the cycle onto T3 keeps every flight operating; any
+  cancellation is strictly worse. The naive rule would cancel F4 (fewer passengers) and change nothing about
+  F3.
+instance:
+  base: tiny
+disruptions:
+  - aog:T1:500
+decision_time: 480
+expected:
+  top1: {type: SWAP, target_flights: [F3], params: {swap_tail: T3}}
+  plan_metrics:
+    - {metric: forced_downstream_cancellations, op: "==", value: 0}
+    - {metric: cancellations, op: "==", value: 0}
+tolerances: {max_latency_ms: 5000}
