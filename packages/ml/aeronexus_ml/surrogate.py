@@ -126,7 +126,7 @@ class Surrogate:
     def drivers(self, state: State, action: Action, baseline, n_at_risk: int, top: int = 5) -> list[dict[str, float | str]]:
         """SHAP contributions for one action (positive = pushes predicted impact up = worse)."""
         try:
-            import shap  # noqa: WPS433 - optional dependency
+            import shap  # noqa
         except ImportError:  # pragma: no cover
             return []
         x = np.array([features_for(state, action, baseline, n_at_risk)], dtype=float)
