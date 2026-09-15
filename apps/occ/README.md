@@ -41,7 +41,24 @@ npm run test:e2e     # playwright, desktop and phone projects (see e2e/console.s
 npm run shots        # screenshots at 1440 / 1024 / 768 / 390 into .shots/
 node scripts/pages.mjs http://localhost:3000 1440   # every page at one width
 npm run api:types    # regenerate src/lib/api.types.ts from openapi.json (after python scripts/export_openapi.py)
+node scripts/build-geo.mjs   # rebuild public/geo/south-asia.json (boundaries as depicted by the Government of India)
+node scripts/map-shot.mjs    # screenshot the network map panel
+node scripts/build-icons.mjs # re-render the PNG app icons from public/icons/*.svg
+node scripts/pwa-check.mjs <url>   # Chromium's installability verdict for a deployed console
 ```
+
+## Installing on a phone
+
+The console is a PWA: `public/manifest.webmanifest`, PNG icons (Android Chrome ignores SVG manifest icons, iOS
+ignores SVG touch icons — keep the PNGs), and a service worker generated from `src/sw/sw.js` by
+`scripts/sync-static.mjs` on every dev and build (`public/sw.js` is not committed). It precaches every page shell,
+its scripts and fonts, the icons, the map and the whole demo bundle, so the installed app opens and shows the demo day
+with no network. Install needs HTTPS (the Vercel URL, not a LAN IP): Android Chrome shows "Install app" in the
+Pages sheet and in the browser menu; on iPhone use Share → Add to Home Screen.
+
+The map's land comes from Natural Earth's *India point-of-view* dataset (`admin_0_countries_ind`), so the external
+boundary is the one the Survey of India publishes — the whole of Jammu & Kashmir and Ladakh, Aksai Chin, Arunachal
+Pradesh. Never rebuild it from the default `admin_0_countries` file.
 
 The e2e static suite expects a console whose engine is unreachable, so it is deterministic:
 

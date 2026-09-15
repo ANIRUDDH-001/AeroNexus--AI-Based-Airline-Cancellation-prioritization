@@ -9,6 +9,7 @@ import { DaySwitcher } from "./DaySwitcher";
 import { ClockControl } from "./ClockControl";
 import { EngineStatus, ModeTag } from "./EngineStatus";
 import { Sheet } from "@/components/ui/overlay";
+import { InstallApp } from "./InstallApp";
 import { useIsPhone } from "@/hooks/useIsTouch";
 
 export const NAV = [
@@ -53,7 +54,7 @@ export function TopBar() {
   const [more, setMore] = useState(false);
   const phone = useIsPhone();
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-hairline bg-panel px-4 md:px-5">
+    <header className="pt-safe flex h-[calc(3rem+env(safe-area-inset-top))] shrink-0 items-center gap-3 border-b border-hairline bg-panel px-4 md:px-5">
       <Link href={withState("/")} className="no-underline">
         <Wordmark />
       </Link>
@@ -98,6 +99,7 @@ export function TopBar() {
             </Link>
           ))}
         </nav>
+        <InstallApp />
       </Sheet>
     </header>
   );

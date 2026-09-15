@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { PARAM_VIEW, parseView, withParams, type PhoneView } from "@/lib/url";
 import { NAV, useNavHref } from "./TopBar";
 import { Sheet } from "@/components/ui/overlay";
+import { InstallApp } from "./InstallApp";
 
 const VIEWS: { view: PhoneView; label: string; icon: typeof Layers }[] = [
   { view: "today", label: "Today", icon: CalendarDays },
@@ -47,6 +48,7 @@ export function MobileTabBar() {
             </Link>
           ))}
         </div>
+        <InstallApp />
       </Sheet>
     </nav>
   );

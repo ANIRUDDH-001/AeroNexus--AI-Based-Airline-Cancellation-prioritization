@@ -15,7 +15,14 @@ export const metadata: Metadata = {
   applicationName: "AeroNexus",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "AeroNexus" },
-  icons: { icon: "/icons/icon.svg", apple: "/icons/icon.svg" },
+  icons: {
+    icon: [
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png", // iOS ignores SVG here and needs an opaque PNG
+  },
 };
 
 export const viewport: Viewport = {
@@ -28,6 +35,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${archivo.variable} ${plexMono.variable}`} suppressHydrationWarning>
+      <head>
+        {/* parks Chrome's one-time install prompt so the Pages sheet can offer "Install app" later */}
+        <script dangerouslySetInnerHTML={{ __html: "addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__axInstall=e;dispatchEvent(new Event('ax:installable'))})" }} />
+      </head>
       <body>
         <Providers>{children}</Providers>
         <ServiceWorker />

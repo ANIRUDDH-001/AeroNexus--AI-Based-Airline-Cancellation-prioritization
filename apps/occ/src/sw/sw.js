@@ -5,11 +5,11 @@
 // Offline promise: every page shell, its scripts and fonts, the icons, the map land and the whole precomputed demo
 // bundle are stored at install. Engine calls are never cached; the client's own static fallback answers from the
 // bundle when the engine is unreachable, and the bundle is here even with no network at all.
-const BUILD = "20260915034321-rn64";
+const BUILD = "__BUILD__";
 const CACHE = `aeronexus-${BUILD}`;
 const ROUTES = ["/", "/flights", "/runs", "/parameters", "/cases", "/data", "/how-it-works"];
 const ASSETS = ["/manifest.webmanifest", "/icons/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/maskable-512.png", "/icons/apple-touch-icon.png", "/geo/south-asia.json"];
-const BUNDLE = ["/static-runs/benchmark.json","/static-runs/cases.json","/static-runs/case_defs.json","/static-runs/config.json","/static-runs/index.json","/static-runs/instance.json","/static-runs/metrics.json","/static-runs/run_300.json","/static-runs/run_360.json","/static-runs/run_420.json","/static-runs/run_480.json","/static-runs/run_540.json","/static-runs/run_600.json","/static-runs/table_aircraft.json","/static-runs/table_airports.json","/static-runs/table_crews.json","/static-runs/table_flights.json","/static-runs/table_itineraries.json","/static-runs/timeline_300.json","/static-runs/timeline_360.json","/static-runs/timeline_420.json","/static-runs/timeline_480.json","/static-runs/timeline_540.json","/static-runs/timeline_600.json"];
+const BUNDLE = __BUNDLE__;
 
 const addAllSettled = async (cache, urls) => {
   const results = await Promise.allSettled(urls.map((u) => cache.add(new Request(u, { cache: "reload" }))));
