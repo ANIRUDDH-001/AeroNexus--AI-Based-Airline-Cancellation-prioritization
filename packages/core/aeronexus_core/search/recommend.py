@@ -244,7 +244,8 @@ def recommend(
         vals = sorted(n.scenario_nis) or [n.nis.total]
         mean = sum(vals) / len(vals)
         p90 = vals[min(len(vals) - 1, int(round(0.9 * (len(vals) - 1))))]
-        return ScenarioStats(mean=mean, p90=p90, stability=wins[n.key] / max(1, len(samples)), samples=len(samples))
+        return ScenarioStats(mean=mean, p90=p90, stability=wins[n.key] / max(1, len(samples)), samples=len(samples),
+                             values=[round(v, 1) for v in n.scenario_nis])
 
     # final ranking on expected NIS (composite) or mean levels (priority)
     def mean_nis(n: PlanNode) -> NISResult:

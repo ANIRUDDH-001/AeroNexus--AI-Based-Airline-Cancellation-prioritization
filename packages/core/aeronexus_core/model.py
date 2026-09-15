@@ -354,6 +354,7 @@ class ScenarioStats(BaseModel):
     p90: float
     stability: float | None = None  # share of samples in which this plan stays top-1
     samples: int
+    values: list[float] = Field(default_factory=list)  # NIS per sampled future (for the uncertainty view)
 
 
 class Plan(BaseModel):

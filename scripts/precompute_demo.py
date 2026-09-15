@@ -59,6 +59,9 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     cfg = load_config(REPO / "configs")
+    # audit mode: never trade samples or depth for latency, so the bundle is reproducible and
+    # scripts/check_static_parity.py can compare it with the engine exactly (deterministic is not in the hash)
+    cfg = cfg.model_copy(update={"search": cfg.search.model_copy(update={"deterministic": True})})
     chash = config_hash(cfg)
     sur = None
     if not args.no_surrogate:
@@ -129,7 +132,7 @@ def main(argv: list[str] | None = None) -> int:
 
     index = {
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"), "engine_version": ENGINE_VERSION,
-        "config_hash": chash, "decision_times": list(args.times),
+        "config_hash": chash, "decision_times": list(args.times), "deterministic": True, "seed": 1,
         "instance": {"id": INSTANCE_ID, "name": inst.name, "size": inst.size, "seed": inst.seed,
                      "created_at": datetime.now(UTC).isoformat(timespec="seconds"), "summary": inst.summary()},
         "runs": sorted(runs, key=lambda r: r["decision_time"]),
