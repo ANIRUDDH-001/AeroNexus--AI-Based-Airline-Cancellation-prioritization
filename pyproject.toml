@@ -7,7 +7,7 @@ pythonpath = ["packages/core", "packages/datagen", "packages/ml", "apps/api"]
 [tool.ruff]
 line-length = 110
 target-version = "py311"
-extend-exclude = ["apps/web", "docs"]
+extend-exclude = ["apps/occ", "docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]

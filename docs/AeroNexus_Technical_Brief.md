@@ -26,7 +26,7 @@ A working, deployable system (monorepo `aeronexus/`), free-tier throughout:
 | **Synthetic data** (`packages/datagen`) | Seeded IndiGo-like network generator (12 airports, 40 A320/A321/ATR tails, ~250 flights, crews with FDTL windows, passenger itineraries) and disruption templates |
 | **Learning** (`packages/ml`) | LightGBM surrogate pre-ranker trained on simulated evaluations; SHAP score drivers |
 | **API** (`apps/api`) | FastAPI, 38 endpoints; SQLite locally, Supabase Postgres hosted; every run stored with its `config_hash`, the day's content hash and what the search actually used |
-| **UI** (`apps/web`) | React + TypeScript, Notion-style light theme: Overview, Disruptions, Recommendations, Flights & resources, Parameters, Cases & benchmarks, Runs, Data |
+| **Console** (`apps/occ`) | Next.js 16 + React 19 + Tailwind v4, "Sodium night" theme: Operations (headline, board, map, disruptions, plans, decisions), Flights & resources, Runs, Parameters, Cases & benchmarks, Data, How it works |
 | **Quality** | 106 pytest tests, ruff, GitHub Actions CI; offline `static-runs` demo bundle; keep-alive workflow for the hosted engine |
 
 No real IndiGo data is used or assumed. Every number in this brief is reproducible from a seed.

@@ -4,7 +4,8 @@
 **/*.pyc
 **/.pytest_cache
 **/.ruff_cache
-apps/web/dist
+apps/occ/.next
+apps/occ/node_modules
 data/instances/*.json
 *.db
 .env

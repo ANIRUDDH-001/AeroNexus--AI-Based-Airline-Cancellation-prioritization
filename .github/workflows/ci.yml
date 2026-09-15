@@ -22,17 +22,20 @@ jobs:
           python -m aeronexus_datagen.cli --size small --seed 1 --validate --out /tmp/small.json
           python -m aeronexus_datagen.cli --size medium --seed 1 --validate --out /tmp/medium.json
 
-  web:
+  console:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/web
+        working-directory: apps/occ
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: apps/occ/package-lock.json
       - run: npm ci
+      - run: npm run verify
       - run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:9

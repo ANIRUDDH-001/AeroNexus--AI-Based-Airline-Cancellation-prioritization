@@ -8,7 +8,7 @@
 # 4. Narration (optional): NARRATION_ENABLED=true + NARRATION_API_KEY. Base URL and model default to Gemini's
 #    OpenAI-compatible endpoint and gemini-3.5-flash-lite; override with NARRATION_BASE_URL / NARRATION_MODEL.
 # 5. AERONEXUS_WRITE_KEY (optional) locks generate/edit/config routes behind the X-AeroNexus-Key header; set the
-#    same value as VITE_API_KEY on Vercel so the UI can still edit. Recommend/what-if/decisions stay open.
+#    same value as NEXT_PUBLIC_API_KEY on Vercel so the UI can still edit. Recommend/what-if/decisions stay open.
 services:
   - type: web
     name: aeronexus-api

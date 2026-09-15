@@ -79,7 +79,6 @@ uvicorn aeronexus_api.main:app --reload --port 8000          # http://127.0.0.1:
 
 # Console (Node 22)
 cd apps/occ && npm install && npm run dev                    # http://localhost:3000 (proxies /api -> :8000)
-# the previous UI still runs: cd apps/web && npm run dev     # http://localhost:5173
 ```
 
 ## Reproduce the numbers
@@ -111,7 +110,6 @@ and depth, the engine version and the controller's decision.
 
 ```
 apps/api        FastAPI service            apps/occ        the console (Next.js 16, Tailwind v4)
-apps/web        previous UI (Vite), kept until the Vercel switch
 packages/core   engine                     packages/datagen synthetic generator
 packages/ml     surrogate pre-ranker       configs/        YAML registries + presets
 data/cases      12 hand-crafted cases      data/benchmarks ladder results
@@ -132,5 +130,5 @@ tests/          pytest suite               render.yaml     Render blueprint (API
 | `AERONEXUS_WRITE_KEY` | unset | When set, generate/edit/config routes need header `X-AeroNexus-Key` |
 | `NARRATION_ENABLED` | `false` | LLM narration feature flag (Plan §14.1) |
 | `NARRATION_API_KEY` / `NARRATION_BASE_URL` / `NARRATION_MODEL` | key unset; Gemini OpenAI-compatible endpoint; `gemini-3.5-flash-lite` | Narration provider (any OpenAI-compatible chat endpoint; use a non-reasoning model) |
-| `VITE_API_URL` (web) | unset → `/api` proxy | Production API origin |
-| `VITE_API_KEY` (web) | unset | Mirrors `AERONEXUS_WRITE_KEY` when the API is locked |
+| `NEXT_PUBLIC_API_URL` (console) | unset → `/api` proxy | Production API origin |
+| `NEXT_PUBLIC_API_KEY` (console) | unset | Mirrors `AERONEXUS_WRITE_KEY` when the API is locked |

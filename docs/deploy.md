@@ -4,7 +4,7 @@ Everything below is free tier. Three layers, each replaceable:
 
 | Layer | Hosted demo | Pitch day | Fallback |
 |---|---|---|---|
-| Web UI | Vercel Hobby (`apps/web`) | same | `npm run preview` on the laptop |
+| Console | Vercel Hobby (`apps/occ`) | same | `npm run build && npm run start` on the laptop |
 | API | Render free web service (`render.yaml`) | Cloudflare Tunnel from the laptop | `uvicorn` on localhost |
 | Storage | Supabase Postgres (project **Aeronexus**, ap-south-1) | same | SQLite (`aeronexus.db`) |
 | If the API is unreachable | `static-runs/` bundle served by the UI (read-only demo of the precomputed day, cases and ladder) | | |
@@ -34,7 +34,7 @@ Everything below is free tier. Three layers, each replaceable:
 
    Optional: `NARRATION_ENABLED=true` + `NARRATION_API_KEY` (Google AI Studio key; the base URL and model default
    to Gemini's OpenAI-compatible endpoint and `gemini-3.5-flash-lite`), and `AERONEXUS_WRITE_KEY` to lock the
-   generate/edit/config routes (then set `VITE_API_KEY` on Vercel to the same value). `/health` reports the
+   generate/edit/config routes (then set `NEXT_PUBLIC_API_KEY` on Vercel to the same value). `/health` reports the
    effective narration mode and whether a write key is required.
 
    **Secrets hygiene:** never screenshot the Environment page with values revealed; if a DB password or API key
@@ -55,8 +55,7 @@ Local Docker equivalent (same image Render would build): `docker build -f apps/a
 
 ## 3. Web on Vercel
 
-The console is `apps/occ` (Next.js). `apps/web` (Vite) is the previous UI and stays deployable until the
-switch is done.
+The console is `apps/occ` (Next.js); the previous Vite UI was removed once the switch was done.
 
 1. Vercel → *Add New Project* → import the repo, set **Root Directory** to `apps/occ` (framework: Next.js is
    detected). To switch an existing project, change its Root Directory in *Settings → General* and redeploy.
@@ -77,7 +76,7 @@ cloudflared tunnel --url http://127.0.0.1:8000        # prints https://<random>.
 ```
 
 Set `AERONEXUS_CORS` to include the Vercel origin before starting uvicorn, then either redeploy the web app
-with `VITE_API_URL=https://<random>.trycloudflare.com` or run the UI locally (`npm run dev`, which proxies
+with `NEXT_PUBLIC_API_URL=https://<random>.trycloudflare.com` or run the console locally (`npm run dev`, which proxies
 `/api` → `:8000` and needs no CORS at all). Quick tunnels need no account; a named tunnel gives a stable URL.
 
 ## 4b. Keeping the engine awake
@@ -96,10 +95,10 @@ Render sleeps the free service after 15 idle minutes. Three layers cover it:
 
 `scripts/precompute_demo.py` writes `data/static-runs/`: the demo day (`instance.json`, entity tables), the
 baseline timeline and a full recommendation at 05:00, 06:00, 07:00, 08:00, 09:00 and 10:00, the case-suite
-result, the benchmark ladder and the configuration snapshot. The web client (`apps/web/src/lib/api.ts`)
-switches to this bundle automatically when the API returns a network error or a 502/503/504, shows
-**"Precomputed demo (engine not reachable)"** in the sidebar, and serves the nearest precomputed decision time.
-Edits, what-if and re-runs need the live engine and fail with a clear 503 message.
+result, the benchmark ladder and the configuration snapshot. The console (`apps/occ/src/lib/api.ts`)
+switches to this bundle automatically when the API returns a network error or a 502/503/504, shows the
+**Demo** pill and banner, tags every result "Demo result", and serves the nearest precomputed decision time.
+Edits, what-if and re-runs need the live engine and say so.
 
 ## 6. Pre-demo checklist
 
