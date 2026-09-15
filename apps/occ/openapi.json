@@ -1,0 +1,5069 @@
+{
+ "components": {
+  "schemas": {
+   "Action": {
+    "properties": {
+     "feasibility": {
+      "$ref": "#/components/schemas/Feasibility"
+     },
+     "metrics": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "title": "Metrics",
+      "type": "object"
+     },
+     "params": {
+      "additionalProperties": true,
+      "title": "Params",
+      "type": "object"
+     },
+     "target_flights": {
+      "items": {
+       "type": "string"
+      },
+      "minItems": 1,
+      "title": "Target Flights",
+      "type": "array"
+     },
+     "type": {
+      "enum": [
+       "CANCEL_LEG",
+       "CANCEL_CYCLE",
+       "DELAY",
+       "SWAP",
+       "WAIT"
+      ],
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "type",
+     "target_flights"
+    ],
+    "title": "Action",
+    "type": "object"
+   },
+   "Aircraft": {
+    "properties": {
+     "attributes": {
+      "additionalProperties": true,
+      "title": "Attributes",
+      "type": "object"
+     },
+     "location": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Location"
+     },
+     "maintenance_due_at": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Maintenance Due At"
+     },
+     "mel_restrictions": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Mel Restrictions",
+      "type": "array"
+     },
+     "status": {
+      "default": "OK",
+      "enum": [
+       "OK",
+       "AOG",
+       "MEL"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "tail": {
+      "title": "Tail",
+      "type": "string"
+     },
+     "type_code": {
+      "title": "Type Code",
+      "type": "string"
+     }
+    },
+    "required": [
+     "tail",
+     "type_code"
+    ],
+    "title": "Aircraft",
+    "type": "object"
+   },
+   "AircraftType": {
+    "properties": {
+     "attributes": {
+      "additionalProperties": true,
+      "title": "Attributes",
+      "type": "object"
+     },
+     "cat3_capable": {
+      "default": true,
+      "title": "Cat3 Capable",
+      "type": "boolean"
+     },
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "cruise_kmh": {
+      "default": 750.0,
+      "exclusiveMinimum": 0.0,
+      "title": "Cruise Kmh",
+      "type": "number"
+     },
+     "hourly_operating_cost": {
+      "default": 0.0,
+      "minimum": 0.0,
+      "title": "Hourly Operating Cost",
+      "type": "number"
+     },
+     "min_turnaround_min": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Min Turnaround Min",
+      "type": "object"
+     },
+     "seats": {
+      "exclusiveMinimum": 0.0,
+      "title": "Seats",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "code",
+     "seats"
+    ],
+    "title": "AircraftType",
+    "type": "object"
+   },
+   "Airport": {
+    "properties": {
+     "attributes": {
+      "additionalProperties": true,
+      "title": "Attributes",
+      "type": "object"
+     },
+     "closure_windows": {
+      "items": {
+       "$ref": "#/components/schemas/TimeWindow"
+      },
+      "title": "Closure Windows",
+      "type": "array"
+     },
+     "code": {
+      "maxLength": 4,
+      "minLength": 3,
+      "title": "Code",
+      "type": "string"
+     },
+     "curfew_windows": {
+      "items": {
+       "$ref": "#/components/schemas/TimeWindow"
+      },
+      "title": "Curfew Windows",
+      "type": "array"
+     },
+     "is_hub": {
+      "default": false,
+      "title": "Is Hub",
+      "type": "boolean"
+     },
+     "lat": {
+      "title": "Lat",
+      "type": "number"
+     },
+     "lon": {
+      "title": "Lon",
+      "type": "number"
+     },
+     "lvp_windows": {
+      "items": {
+       "$ref": "#/components/schemas/TimeWindow"
+      },
+      "title": "Lvp Windows",
+      "type": "array"
+     },
+     "min_connection_time_min": {
+      "default": 45,
+      "minimum": 0.0,
+      "title": "Min Connection Time Min",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "slot_capacity_per_hour": {
+      "$ref": "#/components/schemas/HourlyCapacity"
+     },
+     "stand_capacity": {
+      "default": 20,
+      "minimum": 1.0,
+      "title": "Stand Capacity",
+      "type": "integer"
+     },
+     "tz": {
+      "default": "Asia/Kolkata",
+      "title": "Tz",
+      "type": "string"
+     }
+    },
+    "required": [
+     "code",
+     "name",
+     "lat",
+     "lon"
+    ],
+    "title": "Airport",
+    "type": "object"
+   },
+   "AtRiskOut": {
+    "properties": {
+     "delay_min": {
+      "default": 0,
+      "title": "Delay Min",
+      "type": "integer"
+     },
+     "flight": {
+      "title": "Flight",
+      "type": "string"
+     },
+     "forced": {
+      "default": false,
+      "title": "Forced",
+      "type": "boolean"
+     },
+     "reasons": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Reasons",
+      "type": "array"
+     }
+    },
+    "required": [
+     "flight",
+     "reasons"
+    ],
+    "title": "AtRiskOut",
+    "type": "object"
+   },
+   "BenchmarkOut": {
+    "properties": {
+     "block_sigma": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Block Sigma"
+     },
+     "config_hash": {
+      "title": "Config Hash",
+      "type": "string"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "current_config_hash": {
+      "title": "Current Config Hash",
+      "type": "string"
+     },
+     "records": {
+      "items": {
+       "$ref": "#/components/schemas/BenchmarkRecordOut"
+      },
+      "title": "Records",
+      "type": "array"
+     },
+     "s_eval": {
+      "title": "S Eval",
+      "type": "integer"
+     },
+     "scenarios": {
+      "title": "Scenarios",
+      "type": "integer"
+     },
+     "seed": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Seed"
+     },
+     "stale": {
+      "title": "Stale",
+      "type": "boolean"
+     },
+     "summary": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/PolicySummaryOut"
+      },
+      "title": "Summary",
+      "type": "object"
+     }
+    },
+    "required": [
+     "created_at",
+     "config_hash",
+     "current_config_hash",
+     "stale",
+     "scenarios",
+     "s_eval",
+     "summary",
+     "records"
+    ],
+    "title": "BenchmarkOut",
+    "type": "object"
+   },
+   "BenchmarkRecordOut": {
+    "properties": {
+     "at_risk": {
+      "title": "At Risk",
+      "type": "integer"
+     },
+     "baseline_forced": {
+      "title": "Baseline Forced",
+      "type": "number"
+     },
+     "clock": {
+      "title": "Clock",
+      "type": "integer"
+     },
+     "disruption": {
+      "title": "Disruption",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "policies": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/PolicyOutcomeOut"
+      },
+      "title": "Policies",
+      "type": "object"
+     },
+     "size": {
+      "title": "Size",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "size",
+     "disruption",
+     "clock",
+     "at_risk",
+     "baseline_forced",
+     "policies"
+    ],
+    "title": "BenchmarkRecordOut",
+    "type": "object"
+   },
+   "BenchmarkRunRequest": {
+    "properties": {
+     "s_eval": {
+      "default": 20,
+      "maximum": 40.0,
+      "minimum": 5.0,
+      "title": "S Eval",
+      "type": "integer"
+     },
+     "save": {
+      "default": false,
+      "title": "Save",
+      "type": "boolean"
+     },
+     "scenarios": {
+      "default": 4,
+      "maximum": 10.0,
+      "minimum": 1.0,
+      "title": "Scenarios",
+      "type": "integer"
+     },
+     "seed": {
+      "default": 2026,
+      "title": "Seed",
+      "type": "integer"
+     },
+     "use_surrogate": {
+      "default": true,
+      "title": "Use Surrogate",
+      "type": "boolean"
+     }
+    },
+    "title": "BenchmarkRunRequest",
+    "type": "object"
+   },
+   "CaseDefOut": {
+    "properties": {
+     "base": {
+      "default": "tiny",
+      "title": "Base",
+      "type": "string"
+     },
+     "decision_time": {
+      "default": 0,
+      "title": "Decision Time",
+      "type": "integer"
+     },
+     "disruptions": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Disruptions",
+      "type": "array"
+     },
+     "expected": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Expected",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "rationale": {
+      "default": "",
+      "title": "Rationale",
+      "type": "string"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "title"
+    ],
+    "title": "CaseDefOut",
+    "type": "object"
+   },
+   "CaseExcludedOut": {
+    "properties": {
+     "key": {
+      "title": "Key",
+      "type": "string"
+     },
+     "reasons": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Reasons",
+      "type": "array"
+     }
+    },
+    "required": [
+     "key"
+    ],
+    "title": "CaseExcludedOut",
+    "type": "object"
+   },
+   "CasePlanOut": {
+    "properties": {
+     "actions": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Actions",
+      "type": "array"
+     },
+     "nis": {
+      "title": "Nis",
+      "type": "number"
+     },
+     "rank": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rank"
+     }
+    },
+    "required": [
+     "nis"
+    ],
+    "title": "CasePlanOut",
+    "type": "object"
+   },
+   "CaseResultOut": {
+    "properties": {
+     "baseline_forced": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Baseline Forced"
+     },
+     "checks": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Checks",
+      "type": "array"
+     },
+     "excluded": {
+      "items": {
+       "$ref": "#/components/schemas/CaseExcludedOut"
+      },
+      "title": "Excluded",
+      "type": "array"
+     },
+     "expected": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Expected",
+      "type": "array"
+     },
+     "failures": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Failures",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "latency_ms": {
+      "default": 0.0,
+      "title": "Latency Ms",
+      "type": "number"
+     },
+     "matched": {
+      "title": "Matched",
+      "type": "string"
+     },
+     "nis": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Nis"
+     },
+     "passed": {
+      "title": "Passed",
+      "type": "boolean"
+     },
+     "plan_forced": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plan Forced"
+     },
+     "plans": {
+      "items": {
+       "$ref": "#/components/schemas/CasePlanOut"
+      },
+      "title": "Plans",
+      "type": "array"
+     },
+     "plans_evaluated": {
+      "default": 0,
+      "title": "Plans Evaluated",
+      "type": "integer"
+     },
+     "rationale": {
+      "default": "",
+      "title": "Rationale",
+      "type": "string"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     },
+     "top1": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Top1",
+      "type": "array"
+     },
+     "top_reasons": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Top Reasons",
+      "type": "array"
+     }
+    },
+    "required": [
+     "id",
+     "title",
+     "passed",
+     "matched"
+    ],
+    "title": "CaseResultOut",
+    "type": "object"
+   },
+   "CasesRunOut": {
+    "properties": {
+     "config_hash": {
+      "title": "Config Hash",
+      "type": "string"
+     },
+     "config_version": {
+      "title": "Config Version",
+      "type": "integer"
+     },
+     "elapsed_ms": {
+      "title": "Elapsed Ms",
+      "type": "number"
+     },
+     "passed": {
+      "title": "Passed",
+      "type": "integer"
+     },
+     "results": {
+      "items": {
+       "$ref": "#/components/schemas/CaseResultOut"
+      },
+      "title": "Results",
+      "type": "array"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     },
+     "use_surrogate": {
+      "title": "Use Surrogate",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "config_hash",
+     "config_version",
+     "use_surrogate",
+     "passed",
+     "total",
+     "elapsed_ms",
+     "results"
+    ],
+    "title": "CasesRunOut",
+    "type": "object"
+   },
+   "CasesRunRequest": {
+    "properties": {
+     "ids": {
+      "description": "subset of case ids; empty = all",
+      "items": {
+       "type": "string"
+      },
+      "title": "Ids",
+      "type": "array"
+     },
+     "use_surrogate": {
+      "default": false,
+      "title": "Use Surrogate",
+      "type": "boolean"
+     }
+    },
+    "title": "CasesRunRequest",
+    "type": "object"
+   },
+   "ColumnRequest": {
+    "properties": {
+     "default": {
+      "default": 0,
+      "title": "Default"
+     },
+     "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+     },
+     "entity": {
+      "enum": [
+       "flights",
+       "aircraft",
+       "crews",
+       "airports",
+       "itineraries"
+      ],
+      "title": "Entity",
+      "type": "string"
+     },
+     "name": {
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Name",
+      "type": "string"
+     },
+     "type": {
+      "default": "number",
+      "enum": [
+       "number",
+       "bool",
+       "text"
+      ],
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "entity",
+     "name"
+    ],
+    "title": "ColumnRequest",
+    "type": "object"
+   },
+   "CommittedOut": {
+    "properties": {
+     "cancelled": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Cancelled",
+      "type": "array"
+     },
+     "count": {
+      "title": "Count",
+      "type": "integer"
+     },
+     "delays": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Delays",
+      "type": "object"
+     },
+     "labels": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Labels",
+      "type": "array"
+     },
+     "swaps": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Swaps",
+      "type": "array"
+     },
+     "tail_override": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Tail Override",
+      "type": "object"
+     }
+    },
+    "required": [
+     "cancelled",
+     "delays",
+     "swaps",
+     "tail_override",
+     "labels",
+     "count"
+    ],
+    "title": "CommittedOut",
+    "type": "object"
+   },
+   "ConfigEnvelope": {
+    "properties": {
+     "config": {
+      "$ref": "#/components/schemas/EngineConfig"
+     },
+     "hash": {
+      "title": "Hash",
+      "type": "string"
+     },
+     "updated_at": {
+      "title": "Updated At",
+      "type": "string"
+     },
+     "version": {
+      "title": "Version",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "version",
+     "hash",
+     "updated_at",
+     "config"
+    ],
+    "title": "ConfigEnvelope",
+    "type": "object"
+   },
+   "ConstraintDef": {
+    "properties": {
+     "config": {
+      "additionalProperties": true,
+      "title": "Config",
+      "type": "object"
+     },
+     "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+     },
+     "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+     },
+     "id": {
+      "pattern": "^[A-Za-z][A-Za-z0-9_]*$",
+      "title": "Id",
+      "type": "string"
+     },
+     "kind": {
+      "default": "builtin",
+      "enum": [
+       "builtin",
+       "expression"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "plugin": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plugin"
+     },
+     "severity": {
+      "const": "hard",
+      "default": "hard",
+      "title": "Severity",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name"
+    ],
+    "title": "ConstraintDef",
+    "type": "object"
+   },
+   "Crew": {
+    "description": "One crew set (cockpit + cabin as a unit; decision Q6) with cockpit qualification flags.",
+    "properties": {
+     "attributes": {
+      "additionalProperties": true,
+      "title": "Attributes",
+      "type": "object"
+     },
+     "base": {
+      "title": "Base",
+      "type": "string"
+     },
+     "callout_min": {
+      "default": 90,
+      "minimum": 0.0,
+      "title": "Callout Min",
+      "type": "integer"
+     },
+     "duty_start": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duty Start"
+     },
+     "fdp_limit_min": {
+      "exclusiveMinimum": 0.0,
+      "title": "Fdp Limit Min",
+      "type": "integer"
+     },
+     "flight_time_today_min": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Flight Time Today Min",
+      "type": "integer"
+     },
+     "flight_time_week_min": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Flight Time Week Min",
+      "type": "integer"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "is_standby": {
+      "default": false,
+      "title": "Is Standby",
+      "type": "boolean"
+     },
+     "location": {
+      "title": "Location",
+      "type": "string"
+     },
+     "pairing": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Pairing",
+      "type": "array"
+     },
+     "rest_until": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Rest Until",
+      "type": "integer"
+     },
+     "special_quals": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Special Quals",
+      "type": "array"
+     },
+     "type_ratings": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Type Ratings",
+      "type": "array"
+     }
+    },
+    "required": [
+     "id",
+     "base",
+     "type_ratings",
+     "fdp_limit_min",
+     "location"
+    ],
+    "title": "Crew",
+    "type": "object"
+   },
+   "DecisionRequest": {
+    "properties": {
+     "accepted_plan": {
+      "anyOf": [
+       {
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Accepted Plan"
+     },
+     "override_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Override Reason"
+     }
+    },
+    "title": "DecisionRequest",
+    "type": "object"
+   },
+   "Decisions": {
+    "description": "The plan-so-far as an overlay on the immutable instance (Plan \u00a77). Applying an action extends this;\nthe simulator derives the effective schedule from instance + decisions + disruptions.",
+    "properties": {
+     "cancelled": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Cancelled",
+      "type": "array"
+     },
+     "crew_override": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Crew Override",
+      "type": "object"
+     },
+     "delays": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Delays",
+      "type": "object"
+     },
+     "swaps": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Swaps",
+      "type": "array"
+     },
+     "tail_override": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Tail Override",
+      "type": "object"
+     },
+     "wait_until": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Wait Until"
+     }
+    },
+    "title": "Decisions",
+    "type": "object"
+   },
+   "DeletedOut": {
+    "properties": {
+     "deleted": {
+      "title": "Deleted",
+      "type": "string"
+     }
+    },
+    "required": [
+     "deleted"
+    ],
+    "title": "DeletedOut",
+    "type": "object"
+   },
+   "Disruption": {
+    "properties": {
+     "attributes": {
+      "additionalProperties": true,
+      "title": "Attributes",
+      "type": "object"
+     },
+     "end_distribution": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "End Distribution"
+     },
+     "end_nominal": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "End Nominal"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "severity": {
+      "additionalProperties": true,
+      "title": "Severity",
+      "type": "object"
+     },
+     "start": {
+      "minimum": 0.0,
+      "title": "Start",
+      "type": "integer"
+     },
+     "target": {
+      "title": "Target",
+      "type": "string"
+     },
+     "type": {
+      "enum": [
+       "AIRPORT_CAPACITY",
+       "LVP",
+       "AOG",
+       "CREW_UNAVAILABLE",
+       "ATC_FLOW",
+       "FLIGHT_DELAY",
+       "CLOSURE"
+      ],
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "type",
+     "target",
+     "start"
+    ],
+    "title": "Disruption",
+    "type": "object"
+   },
+   "DisruptionRequest": {
+    "properties": {
+     "disruption": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Disruption"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "spec": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "CLI-style spec, e.g. fog:DEL:300:240:0.4",
+      "title": "Spec"
+     }
+    },
+    "title": "DisruptionRequest",
+    "type": "object"
+   },
+   "EngineConfig": {
+    "properties": {
+     "constraints": {
+      "items": {
+       "$ref": "#/components/schemas/ConstraintDef"
+      },
+      "title": "Constraints",
+      "type": "array"
+     },
+     "objective_terms": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectiveTerm"
+      },
+      "title": "Objective Terms",
+      "type": "array"
+     },
+     "parameters": {
+      "items": {
+       "$ref": "#/components/schemas/ParameterDef"
+      },
+      "title": "Parameters",
+      "type": "array"
+     },
+     "preset_name": {
+      "default": "default",
+      "title": "Preset Name",
+      "type": "string"
+     },
+     "search": {
+      "$ref": "#/components/schemas/SearchSettings"
+     }
+    },
+    "title": "EngineConfig",
+    "type": "object"
+   },
+   "Feasibility": {
+    "properties": {
+     "reasons": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Reasons",
+      "type": "array"
+     },
+     "status": {
+      "default": "unchecked",
+      "enum": [
+       "feasible",
+       "infeasible",
+       "unchecked"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "title": "Feasibility",
+    "type": "object"
+   },
+   "Flight": {
+    "properties": {
+     "aircraft_type": {
+      "title": "Aircraft Type",
+      "type": "string"
+     },
+     "attributes": {
+      "additionalProperties": true,
+      "title": "Attributes",
+      "type": "object"
+     },
+     "block_min": {
+      "exclusiveMinimum": 0.0,
+      "title": "Block Min",
+      "type": "integer"
+     },
+     "booked_pax": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Booked Pax",
+      "type": "integer"
+     },
+     "crew_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Crew Id"
+     },
+     "delay_min": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Delay Min",
+      "type": "integer"
+     },
+     "dest": {
+      "title": "Dest",
+      "type": "string"
+     },
+     "eta": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Eta"
+     },
+     "etd": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Etd"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "number": {
+      "title": "Number",
+      "type": "string"
+     },
+     "origin": {
+      "title": "Origin",
+      "type": "string"
+     },
+     "pax_connecting": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Pax Connecting",
+      "type": "integer"
+     },
+     "pax_high_value": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Pax High Value",
+      "type": "integer"
+     },
+     "pax_partner": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Pax Partner",
+      "type": "integer"
+     },
+     "pax_special_assistance": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Pax Special Assistance",
+      "type": "integer"
+     },
+     "protected": {
+      "default": false,
+      "title": "Protected",
+      "type": "boolean"
+     },
+     "protection_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Protection Reason"
+     },
+     "seats": {
+      "exclusiveMinimum": 0.0,
+      "title": "Seats",
+      "type": "integer"
+     },
+     "sta": {
+      "minimum": 0.0,
+      "title": "Sta",
+      "type": "integer"
+     },
+     "status": {
+      "default": "SCHEDULED",
+      "enum": [
+       "SCHEDULED",
+       "DELAYED",
+       "DEPARTED",
+       "ARRIVED",
+       "CANCELLED"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "std": {
+      "minimum": 0.0,
+      "title": "Std",
+      "type": "integer"
+     },
+     "tail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tail"
+     }
+    },
+    "required": [
+     "id",
+     "number",
+     "origin",
+     "dest",
+     "std",
+     "sta",
+     "block_min",
+     "aircraft_type",
+     "seats"
+    ],
+    "title": "Flight",
+    "type": "object"
+   },
+   "GenerateRequest": {
+    "properties": {
+     "disruptions": {
+      "description": "CLI-style specs, e.g. fog:DEL, aog:VT-IAB:600",
+      "items": {
+       "type": "string"
+      },
+      "title": "Disruptions",
+      "type": "array"
+     },
+     "overrides": {
+      "additionalProperties": true,
+      "description": "GeneratorParams field overrides",
+      "title": "Overrides",
+      "type": "object"
+     },
+     "seed": {
+      "default": 1,
+      "title": "Seed",
+      "type": "integer"
+     },
+     "size": {
+      "default": "small",
+      "enum": [
+       "small",
+       "medium",
+       "large"
+      ],
+      "title": "Size",
+      "type": "string"
+     }
+    },
+    "title": "GenerateRequest",
+    "type": "object"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "title": "Detail",
+      "type": "array"
+     }
+    },
+    "title": "HTTPValidationError",
+    "type": "object"
+   },
+   "HealthOut": {
+    "properties": {
+     "config_hash": {
+      "title": "Config Hash",
+      "type": "string"
+     },
+     "config_version": {
+      "title": "Config Version",
+      "type": "integer"
+     },
+     "engine_version": {
+      "title": "Engine Version",
+      "type": "string"
+     },
+     "narration": {
+      "$ref": "#/components/schemas/NarrationStatus"
+     },
+     "narration_enabled": {
+      "title": "Narration Enabled",
+      "type": "boolean"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     },
+     "write_key_required": {
+      "title": "Write Key Required",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "status",
+     "engine_version",
+     "config_hash",
+     "config_version",
+     "narration_enabled",
+     "narration",
+     "write_key_required"
+    ],
+    "title": "HealthOut",
+    "type": "object"
+   },
+   "HourlyCapacity": {
+    "properties": {
+     "arr": {
+      "minimum": 0.0,
+      "title": "Arr",
+      "type": "integer"
+     },
+     "dep": {
+      "minimum": 0.0,
+      "title": "Dep",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "dep",
+     "arr"
+    ],
+    "title": "HourlyCapacity",
+    "type": "object"
+   },
+   "Instance": {
+    "properties": {
+     "aircraft": {
+      "items": {
+       "$ref": "#/components/schemas/Aircraft"
+      },
+      "title": "Aircraft",
+      "type": "array"
+     },
+     "aircraft_types": {
+      "items": {
+       "$ref": "#/components/schemas/AircraftType"
+      },
+      "title": "Aircraft Types",
+      "type": "array"
+     },
+     "airports": {
+      "items": {
+       "$ref": "#/components/schemas/Airport"
+      },
+      "title": "Airports",
+      "type": "array"
+     },
+     "committed": {
+      "$ref": "#/components/schemas/Decisions"
+     },
+     "crews": {
+      "items": {
+       "$ref": "#/components/schemas/Crew"
+      },
+      "title": "Crews",
+      "type": "array"
+     },
+     "day_start": {
+      "format": "date",
+      "title": "Day Start",
+      "type": "string"
+     },
+     "disruptions": {
+      "items": {
+       "$ref": "#/components/schemas/Disruption"
+      },
+      "title": "Disruptions",
+      "type": "array"
+     },
+     "flights": {
+      "items": {
+       "$ref": "#/components/schemas/Flight"
+      },
+      "title": "Flights",
+      "type": "array"
+     },
+     "itineraries": {
+      "items": {
+       "$ref": "#/components/schemas/Itinerary"
+      },
+      "title": "Itineraries",
+      "type": "array"
+     },
+     "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "seed": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Seed"
+     },
+     "size": {
+      "default": "custom",
+      "enum": [
+       "small",
+       "medium",
+       "large",
+       "custom"
+      ],
+      "title": "Size",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "day_start",
+     "airports",
+     "aircraft_types",
+     "aircraft",
+     "flights",
+     "crews",
+     "itineraries"
+    ],
+    "title": "Instance",
+    "type": "object"
+   },
+   "InstanceCreated": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "issues": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Issues",
+      "type": "array"
+     },
+     "summary": {
+      "additionalProperties": true,
+      "title": "Summary",
+      "type": "object"
+     }
+    },
+    "required": [
+     "id",
+     "summary",
+     "issues"
+    ],
+    "title": "InstanceCreated",
+    "type": "object"
+   },
+   "InstanceRowOut": {
+    "properties": {
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "seed": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Seed"
+     },
+     "size": {
+      "title": "Size",
+      "type": "string"
+     },
+     "summary": {
+      "additionalProperties": true,
+      "title": "Summary",
+      "type": "object"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "size",
+     "created_at",
+     "summary"
+    ],
+    "title": "InstanceRowOut",
+    "type": "object"
+   },
+   "Itinerary": {
+    "properties": {
+     "attributes": {
+      "additionalProperties": true,
+      "title": "Attributes",
+      "type": "object"
+     },
+     "category": {
+      "default": "local",
+      "enum": [
+       "local",
+       "connecting",
+       "partner"
+      ],
+      "title": "Category",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "legs": {
+      "items": {
+       "type": "string"
+      },
+      "minItems": 1,
+      "title": "Legs",
+      "type": "array"
+     },
+     "pax_count": {
+      "exclusiveMinimum": 0.0,
+      "title": "Pax Count",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "legs",
+     "pax_count"
+    ],
+    "title": "Itinerary",
+    "type": "object"
+   },
+   "MetricsOut": {
+    "properties": {
+     "metrics": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Metrics",
+      "type": "array"
+     }
+    },
+    "required": [
+     "metrics"
+    ],
+    "title": "MetricsOut",
+    "type": "object"
+   },
+   "NarrationStatus": {
+    "properties": {
+     "accepted": {
+      "default": 0,
+      "title": "Accepted",
+      "type": "integer"
+     },
+     "calls": {
+      "default": 0,
+      "title": "Calls",
+      "type": "integer"
+     },
+     "failed": {
+      "default": 0,
+      "title": "Failed",
+      "type": "integer"
+     },
+     "last_error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Error"
+     },
+     "mode": {
+      "title": "Mode",
+      "type": "string"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model"
+     },
+     "rejected": {
+      "default": 0,
+      "title": "Rejected",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "mode"
+    ],
+    "title": "NarrationStatus",
+    "type": "object"
+   },
+   "ObjectiveTerm": {
+    "properties": {
+     "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+     },
+     "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+     },
+     "expression": {
+      "title": "Expression",
+      "type": "string"
+     },
+     "level": {
+      "enum": [
+       "L1",
+       "L2",
+       "L3",
+       "L4"
+      ],
+      "title": "Level",
+      "type": "string"
+     },
+     "name": {
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Name",
+      "type": "string"
+     },
+     "weight": {
+      "minimum": 0.0,
+      "title": "Weight",
+      "type": "number"
+     }
+    },
+    "required": [
+     "name",
+     "level",
+     "expression",
+     "weight"
+    ],
+    "title": "ObjectiveTerm",
+    "type": "object"
+   },
+   "ParameterDef": {
+    "properties": {
+     "choices": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Choices"
+     },
+     "default": {
+      "default": 0,
+      "title": "Default"
+     },
+     "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+     },
+     "name": {
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Name",
+      "type": "string"
+     },
+     "scope": {
+      "default": "global",
+      "enum": [
+       "flight",
+       "aircraft",
+       "crew",
+       "airport",
+       "itinerary",
+       "global"
+      ],
+      "title": "Scope",
+      "type": "string"
+     },
+     "source": {
+      "default": "user",
+      "enum": [
+       "column",
+       "user",
+       "builtin"
+      ],
+      "title": "Source",
+      "type": "string"
+     },
+     "type": {
+      "default": "number",
+      "enum": [
+       "number",
+       "bool",
+       "enum",
+       "text"
+      ],
+      "title": "Type",
+      "type": "string"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "ParameterDef",
+    "type": "object"
+   },
+   "PatchRequest": {
+    "properties": {
+     "attributes": {
+      "additionalProperties": true,
+      "title": "Attributes",
+      "type": "object"
+     },
+     "fields": {
+      "additionalProperties": true,
+      "title": "Fields",
+      "type": "object"
+     },
+     "remove_attributes": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Remove Attributes",
+      "type": "array"
+     }
+    },
+    "title": "PatchRequest",
+    "type": "object"
+   },
+   "Plan": {
+    "properties": {
+     "actions": {
+      "items": {
+       "$ref": "#/components/schemas/Action"
+      },
+      "title": "Actions",
+      "type": "array"
+     },
+     "explanation": {
+      "additionalProperties": true,
+      "title": "Explanation",
+      "type": "object"
+     },
+     "metrics": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "title": "Metrics",
+      "type": "object"
+     },
+     "nis": {
+      "default": 0.0,
+      "title": "Nis",
+      "type": "number"
+     },
+     "nis_breakdown": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "title": "Nis Breakdown",
+      "type": "object"
+     },
+     "rank": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rank"
+     },
+     "scenario_stats": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ScenarioStats"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "actions"
+    ],
+    "title": "Plan",
+    "type": "object"
+   },
+   "PlanTimelineRequest": {
+    "properties": {
+     "actions": {
+      "items": {
+       "$ref": "#/components/schemas/Action"
+      },
+      "title": "Actions",
+      "type": "array"
+     },
+     "decision_time": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Decision Time",
+      "type": "integer"
+     },
+     "instance_id": {
+      "title": "Instance Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "instance_id",
+     "actions"
+    ],
+    "title": "PlanTimelineRequest",
+    "type": "object"
+   },
+   "PolicyOutcomeOut": {
+    "properties": {
+     "actions": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Actions",
+      "type": "array"
+     },
+     "delay_min": {
+      "title": "Delay Min",
+      "type": "number"
+     },
+     "forced": {
+      "title": "Forced",
+      "type": "number"
+     },
+     "latency_ms": {
+      "title": "Latency Ms",
+      "type": "number"
+     },
+     "misconnects": {
+      "title": "Misconnects",
+      "type": "number"
+     },
+     "nis_mean": {
+      "title": "Nis Mean",
+      "type": "number"
+     },
+     "nis_p90": {
+      "title": "Nis P90",
+      "type": "number"
+     },
+     "pax_cancelled": {
+      "title": "Pax Cancelled",
+      "type": "number"
+     },
+     "pax_stranded": {
+      "title": "Pax Stranded",
+      "type": "number"
+     }
+    },
+    "required": [
+     "nis_mean",
+     "nis_p90",
+     "forced",
+     "pax_cancelled",
+     "pax_stranded",
+     "misconnects",
+     "delay_min",
+     "latency_ms"
+    ],
+    "title": "PolicyOutcomeOut",
+    "type": "object"
+   },
+   "PolicySummaryOut": {
+    "properties": {
+     "delay_min_mean": {
+      "title": "Delay Min Mean",
+      "type": "number"
+     },
+     "forced_mean": {
+      "title": "Forced Mean",
+      "type": "number"
+     },
+     "improvement_vs_B0_pct": {
+      "title": "Improvement Vs B0 Pct",
+      "type": "number"
+     },
+     "latency_ms_mean": {
+      "title": "Latency Ms Mean",
+      "type": "number"
+     },
+     "latency_ms_p95": {
+      "title": "Latency Ms P95",
+      "type": "number"
+     },
+     "misconnects_mean": {
+      "title": "Misconnects Mean",
+      "type": "number"
+     },
+     "nis_mean": {
+      "title": "Nis Mean",
+      "type": "number"
+     },
+     "nis_p90_mean": {
+      "title": "Nis P90 Mean",
+      "type": "number"
+     },
+     "pax_cancelled_mean": {
+      "title": "Pax Cancelled Mean",
+      "type": "number"
+     },
+     "pax_stranded_mean": {
+      "title": "Pax Stranded Mean",
+      "type": "number"
+     },
+     "tie_rate_vs_B0": {
+      "title": "Tie Rate Vs B0",
+      "type": "number"
+     },
+     "win_rate_vs_B0": {
+      "title": "Win Rate Vs B0",
+      "type": "number"
+     }
+    },
+    "required": [
+     "nis_mean",
+     "nis_p90_mean",
+     "forced_mean",
+     "pax_cancelled_mean",
+     "pax_stranded_mean",
+     "misconnects_mean",
+     "delay_min_mean",
+     "win_rate_vs_B0",
+     "tie_rate_vs_B0",
+     "improvement_vs_B0_pct",
+     "latency_ms_mean",
+     "latency_ms_p95"
+    ],
+    "title": "PolicySummaryOut",
+    "type": "object"
+   },
+   "PresetRowOut": {
+    "properties": {
+     "hash": {
+      "title": "Hash",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "updated_at": {
+      "title": "Updated At",
+      "type": "string"
+     },
+     "version": {
+      "title": "Version",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "name",
+     "version",
+     "hash",
+     "updated_at"
+    ],
+    "title": "PresetRowOut",
+    "type": "object"
+   },
+   "RecommendRequest": {
+    "properties": {
+     "decision_time": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Decision Time",
+      "type": "integer"
+     },
+     "instance_id": {
+      "title": "Instance Id",
+      "type": "string"
+     },
+     "previous_run_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Previous Run Id"
+     },
+     "seed": {
+      "default": 0,
+      "title": "Seed",
+      "type": "integer"
+     },
+     "whatif": {
+      "items": {
+       "items": {
+        "$ref": "#/components/schemas/Action"
+       },
+       "type": "array"
+      },
+      "title": "Whatif",
+      "type": "array"
+     }
+    },
+    "required": [
+     "instance_id"
+    ],
+    "title": "RecommendRequest",
+    "type": "object"
+   },
+   "Run": {
+    "properties": {
+     "accepted_plan": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Accepted Plan"
+     },
+     "at_risk": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "title": "At Risk",
+      "type": "array"
+     },
+     "baseline_metrics": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "title": "Baseline Metrics",
+      "type": "object"
+     },
+     "committed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Committed At"
+     },
+     "config_hash": {
+      "title": "Config Hash",
+      "type": "string"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "decision_time": {
+      "title": "Decision Time",
+      "type": "integer"
+     },
+     "depth_reached": {
+      "default": 0,
+      "title": "Depth Reached",
+      "type": "integer"
+     },
+     "effective": {
+      "additionalProperties": true,
+      "title": "Effective",
+      "type": "object"
+     },
+     "engine_version": {
+      "title": "Engine Version",
+      "type": "string"
+     },
+     "excluded": {
+      "items": {
+       "$ref": "#/components/schemas/Action"
+      },
+      "title": "Excluded",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "instance_hash": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Instance Hash"
+     },
+     "instance_name": {
+      "title": "Instance Name",
+      "type": "string"
+     },
+     "latency_ms": {
+      "default": 0.0,
+      "title": "Latency Ms",
+      "type": "number"
+     },
+     "narrative": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Narrative"
+     },
+     "notes": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+     },
+     "override_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Override Reason"
+     },
+     "plans": {
+      "items": {
+       "$ref": "#/components/schemas/Plan"
+      },
+      "title": "Plans",
+      "type": "array"
+     },
+     "plans_evaluated": {
+      "default": 0,
+      "title": "Plans Evaluated",
+      "type": "integer"
+     },
+     "whatif": {
+      "items": {
+       "$ref": "#/components/schemas/Plan"
+      },
+      "title": "Whatif",
+      "type": "array"
+     }
+    },
+    "required": [
+     "id",
+     "created_at",
+     "decision_time",
+     "instance_name",
+     "config_hash",
+     "engine_version",
+     "plans"
+    ],
+    "title": "Run",
+    "type": "object"
+   },
+   "RunRowOut": {
+    "properties": {
+     "accepted_plan": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Accepted Plan"
+     },
+     "at_risk": {
+      "title": "At Risk",
+      "type": "integer"
+     },
+     "config_hash": {
+      "title": "Config Hash",
+      "type": "string"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "decision_time": {
+      "title": "Decision Time",
+      "type": "integer"
+     },
+     "effective": {
+      "additionalProperties": true,
+      "title": "Effective",
+      "type": "object"
+     },
+     "engine_version": {
+      "title": "Engine Version",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "instance_hash": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Instance Hash"
+     },
+     "instance_id": {
+      "title": "Instance Id",
+      "type": "string"
+     },
+     "latency_ms": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Latency Ms"
+     },
+     "override_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Override Reason"
+     },
+     "plans_evaluated": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plans Evaluated"
+     },
+     "top_nis": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Top Nis"
+     },
+     "top_plan": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Top Plan",
+      "type": "array"
+     }
+    },
+    "required": [
+     "id",
+     "created_at",
+     "instance_id",
+     "decision_time",
+     "config_hash",
+     "engine_version",
+     "top_plan",
+     "at_risk"
+    ],
+    "title": "RunRowOut",
+    "type": "object"
+   },
+   "ScenarioStats": {
+    "properties": {
+     "mean": {
+      "title": "Mean",
+      "type": "number"
+     },
+     "p90": {
+      "title": "P90",
+      "type": "number"
+     },
+     "samples": {
+      "title": "Samples",
+      "type": "integer"
+     },
+     "stability": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stability"
+     },
+     "values": {
+      "items": {
+       "type": "number"
+      },
+      "title": "Values",
+      "type": "array"
+     }
+    },
+    "required": [
+     "mean",
+     "p90",
+     "samples"
+    ],
+    "title": "ScenarioStats",
+    "type": "object"
+   },
+   "SearchSettings": {
+    "properties": {
+     "D": {
+      "default": 3,
+      "description": "beam depth (actions per plan)",
+      "minimum": 1.0,
+      "title": "D",
+      "type": "integer"
+     },
+     "K": {
+      "default": 5,
+      "description": "beam width",
+      "minimum": 1.0,
+      "title": "K",
+      "type": "integer"
+     },
+     "M": {
+      "default": 12,
+      "description": "candidates kept after surrogate pre-rank",
+      "minimum": 1.0,
+      "title": "M",
+      "type": "integer"
+     },
+     "N": {
+      "default": 8,
+      "description": "plans re-evaluated under scenarios",
+      "minimum": 1.0,
+      "title": "N",
+      "type": "integer"
+     },
+     "S": {
+      "default": 10,
+      "description": "sampled scenarios per plan",
+      "minimum": 1.0,
+      "title": "S",
+      "type": "integer"
+     },
+     "at_risk_delay_threshold_min": {
+      "default": 45,
+      "minimum": 0.0,
+      "title": "At Risk Delay Threshold Min",
+      "type": "integer"
+     },
+     "candidate_scope": {
+      "default": "at_risk_only",
+      "enum": [
+       "at_risk_only",
+       "at_risk_plus_neighbours"
+      ],
+      "title": "Candidate Scope",
+      "type": "string"
+     },
+     "delay_steps_min": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Delay Steps Min",
+      "type": "array"
+     },
+     "deterministic": {
+      "default": false,
+      "description": "audit mode: never trade samples or depth for latency, so the same inputs always give the same answer (excluded from the config hash)",
+      "title": "Deterministic",
+      "type": "boolean"
+     },
+     "forced_cancel_delay_min": {
+      "default": 300,
+      "description": "propagation: a leg that cannot depart within this delay is a forced cancellation",
+      "minimum": 0.0,
+      "title": "Forced Cancel Delay Min",
+      "type": "integer"
+     },
+     "horizon_hours": {
+      "default": 8.0,
+      "exclusiveMinimum": 0.0,
+      "title": "Horizon Hours",
+      "type": "number"
+     },
+     "hysteresis_pct": {
+      "default": 5.0,
+      "minimum": 0.0,
+      "title": "Hysteresis Pct",
+      "type": "number"
+     },
+     "latency_budget_ms": {
+      "default": 5000,
+      "minimum": 100.0,
+      "title": "Latency Budget Ms",
+      "type": "integer"
+     },
+     "level_tolerances": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "propertyNames": {
+       "enum": [
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+       ]
+      },
+      "title": "Level Tolerances",
+      "type": "object"
+     },
+     "max_delay_min": {
+      "default": 180,
+      "minimum": 0.0,
+      "title": "Max Delay Min",
+      "type": "integer"
+     },
+     "max_staleness_min": {
+      "default": 30,
+      "description": "abstain if inputs older than this",
+      "minimum": 0.0,
+      "title": "Max Staleness Min",
+      "type": "integer"
+     },
+     "post_flight_duty_min": {
+      "default": 30,
+      "description": "duty minutes after final on-blocks counted inside the FDP",
+      "minimum": 0.0,
+      "title": "Post Flight Duty Min",
+      "type": "integer"
+     },
+     "ranking_mode": {
+      "default": "composite",
+      "enum": [
+       "composite",
+       "priority"
+      ],
+      "title": "Ranking Mode",
+      "type": "string"
+     },
+     "standby_hold_min": {
+      "default": 120,
+      "description": "max extra wait for a standby crew call-out before the leg is forced-cancelled",
+      "minimum": 0.0,
+      "title": "Standby Hold Min",
+      "type": "integer"
+     },
+     "top_n_returned": {
+      "default": 3,
+      "minimum": 1.0,
+      "title": "Top N Returned",
+      "type": "integer"
+     }
+    },
+    "title": "SearchSettings",
+    "type": "object"
+   },
+   "State": {
+    "description": "Operational snapshot at ``clock``: the immutable instance plus the decisions taken so far.",
+    "properties": {
+     "clock": {
+      "minimum": 0.0,
+      "title": "Clock",
+      "type": "integer"
+     },
+     "decisions": {
+      "$ref": "#/components/schemas/Decisions"
+     },
+     "instance": {
+      "$ref": "#/components/schemas/Instance"
+     }
+    },
+    "required": [
+     "clock",
+     "instance"
+    ],
+    "title": "State",
+    "type": "object"
+   },
+   "TableOut": {
+    "properties": {
+     "attribute_columns": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Attribute Columns",
+      "type": "array"
+     },
+     "columns": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Columns",
+      "type": "array"
+     },
+     "entity": {
+      "title": "Entity",
+      "type": "string"
+     },
+     "key": {
+      "title": "Key",
+      "type": "string"
+     },
+     "rows": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "title": "Rows",
+      "type": "array"
+     }
+    },
+    "required": [
+     "entity",
+     "key",
+     "columns",
+     "rows"
+    ],
+    "title": "TableOut",
+    "type": "object"
+   },
+   "TimeWindow": {
+    "properties": {
+     "end": {
+      "minimum": 0.0,
+      "title": "End",
+      "type": "integer"
+     },
+     "start": {
+      "minimum": 0.0,
+      "title": "Start",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "start",
+     "end"
+    ],
+    "title": "TimeWindow",
+    "type": "object"
+   },
+   "TimelineFlightOut": {
+    "properties": {
+     "aircraft_type": {
+      "title": "Aircraft Type",
+      "type": "string"
+     },
+     "arr": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Arr"
+     },
+     "at_risk": {
+      "title": "At Risk",
+      "type": "boolean"
+     },
+     "booked_pax": {
+      "title": "Booked Pax",
+      "type": "integer"
+     },
+     "crew_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Crew Id"
+     },
+     "delay_min": {
+      "title": "Delay Min",
+      "type": "integer"
+     },
+     "dep": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dep"
+     },
+     "dest": {
+      "title": "Dest",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "number": {
+      "title": "Number",
+      "type": "string"
+     },
+     "origin": {
+      "title": "Origin",
+      "type": "string"
+     },
+     "pax_connecting": {
+      "title": "Pax Connecting",
+      "type": "integer"
+     },
+     "protected": {
+      "default": false,
+      "title": "Protected",
+      "type": "boolean"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     },
+     "risk_reasons": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Risk Reasons",
+      "type": "array"
+     },
+     "sta": {
+      "title": "Sta",
+      "type": "integer"
+     },
+     "sta_hhmm": {
+      "title": "Sta Hhmm",
+      "type": "string"
+     },
+     "standby_called": {
+      "title": "Standby Called",
+      "type": "boolean"
+     },
+     "status": {
+      "enum": [
+       "OPERATED",
+       "CANCELLED_DECISION",
+       "CANCELLED_FORCED",
+       "PAST"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "std": {
+      "title": "Std",
+      "type": "integer"
+     },
+     "std_hhmm": {
+      "title": "Std Hhmm",
+      "type": "string"
+     },
+     "tail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tail"
+     }
+    },
+    "required": [
+     "id",
+     "number",
+     "origin",
+     "dest",
+     "std",
+     "sta",
+     "std_hhmm",
+     "sta_hhmm",
+     "aircraft_type",
+     "booked_pax",
+     "pax_connecting",
+     "status",
+     "delay_min",
+     "standby_called",
+     "at_risk"
+    ],
+    "title": "TimelineFlightOut",
+    "type": "object"
+   },
+   "TimelineOut": {
+    "properties": {
+     "at_risk": {
+      "items": {
+       "$ref": "#/components/schemas/AtRiskOut"
+      },
+      "title": "At Risk",
+      "type": "array"
+     },
+     "clock": {
+      "title": "Clock",
+      "type": "integer"
+     },
+     "clock_hhmm": {
+      "title": "Clock Hhmm",
+      "type": "string"
+     },
+     "committed": {
+      "$ref": "#/components/schemas/CommittedOut"
+     },
+     "disruptions": {
+      "items": {
+       "$ref": "#/components/schemas/Disruption"
+      },
+      "title": "Disruptions",
+      "type": "array"
+     },
+     "flights": {
+      "items": {
+       "$ref": "#/components/schemas/TimelineFlightOut"
+      },
+      "title": "Flights",
+      "type": "array"
+     },
+     "instance_id": {
+      "title": "Instance Id",
+      "type": "string"
+     },
+     "rotations": {
+      "additionalProperties": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "title": "Rotations",
+      "type": "object"
+     },
+     "summary": {
+      "$ref": "#/components/schemas/TimelineSummaryOut"
+     }
+    },
+    "required": [
+     "instance_id",
+     "clock",
+     "clock_hhmm",
+     "flights",
+     "rotations",
+     "disruptions",
+     "committed",
+     "at_risk",
+     "summary"
+    ],
+    "title": "TimelineOut",
+    "type": "object"
+   },
+   "TimelineSummaryOut": {
+    "properties": {
+     "aircraft_available": {
+      "title": "Aircraft Available",
+      "type": "integer"
+     },
+     "at_risk": {
+      "title": "At Risk",
+      "type": "integer"
+     },
+     "delayed_flights": {
+      "title": "Delayed Flights",
+      "type": "integer"
+     },
+     "flights": {
+      "title": "Flights",
+      "type": "integer"
+     },
+     "forced_cancellations": {
+      "title": "Forced Cancellations",
+      "type": "integer"
+     },
+     "misconnects": {
+      "title": "Misconnects",
+      "type": "integer"
+     },
+     "standby_crews": {
+      "title": "Standby Crews",
+      "type": "integer"
+     },
+     "standby_used": {
+      "title": "Standby Used",
+      "type": "integer"
+     },
+     "stranded_overnight": {
+      "title": "Stranded Overnight",
+      "type": "integer"
+     },
+     "total_delay_min": {
+      "title": "Total Delay Min",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "flights",
+     "at_risk",
+     "forced_cancellations",
+     "delayed_flights",
+     "total_delay_min",
+     "misconnects",
+     "stranded_overnight",
+     "standby_used",
+     "aircraft_available",
+     "standby_crews"
+    ],
+    "title": "TimelineSummaryOut",
+    "type": "object"
+   },
+   "ValidateRequest": {
+    "properties": {
+     "constraints": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/ConstraintDef"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Constraints"
+     },
+     "terms": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/ObjectiveTerm"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Terms"
+     }
+    },
+    "title": "ValidateRequest",
+    "type": "object"
+   },
+   "ValidationError": {
+    "properties": {
+     "ctx": {
+      "title": "Context",
+      "type": "object"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "title": "Location",
+      "type": "array"
+     },
+     "msg": {
+      "title": "Message",
+      "type": "string"
+     },
+     "type": {
+      "title": "Error Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError",
+    "type": "object"
+   },
+   "WhatIfRequest": {
+    "properties": {
+     "actions": {
+      "items": {
+       "$ref": "#/components/schemas/Action"
+      },
+      "title": "Actions",
+      "type": "array"
+     },
+     "decision_time": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Decision Time",
+      "type": "integer"
+     },
+     "instance_id": {
+      "title": "Instance Id",
+      "type": "string"
+     },
+     "seed": {
+      "default": 0,
+      "title": "Seed",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "instance_id",
+     "actions"
+    ],
+    "title": "WhatIfRequest",
+    "type": "object"
+   }
+  }
+ },
+ "info": {
+  "description": "AI-Based Cancellation Prioritization for Flight Disruptions - advisory decision support for the OCC.",
+  "title": "AeroNexus API",
+  "version": "0.1.0"
+ },
+ "openapi": "3.1.0",
+ "paths": {
+  "/benchmark/latest": {
+   "get": {
+    "operationId": "latest_benchmark_benchmark_latest_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BenchmarkOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Latest Benchmark",
+    "tags": [
+     "validation"
+    ]
+   }
+  },
+  "/benchmark/run": {
+   "post": {
+    "description": "Small ladder run so the current configuration can be checked from the UI; the full 30-scenario run\nstays a CLI job (python -m aeronexus_core.benchmark).",
+    "operationId": "run_bench_benchmark_run_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BenchmarkRunRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BenchmarkOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Run Bench",
+    "tags": [
+     "validation"
+    ]
+   }
+  },
+  "/cases": {
+   "get": {
+    "operationId": "list_cases_cases_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/CaseDefOut"
+         },
+         "title": "Response List Cases Cases Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "List Cases",
+    "tags": [
+     "validation"
+    ]
+   }
+  },
+  "/cases/latest": {
+   "get": {
+    "operationId": "latest_cases_cases_latest_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CasesRunOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Latest Cases",
+    "tags": [
+     "validation"
+    ]
+   }
+  },
+  "/cases/run": {
+   "post": {
+    "operationId": "run_cases_cases_run_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CasesRunRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CasesRunOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Run Cases",
+    "tags": [
+     "validation"
+    ]
+   }
+  },
+  "/config": {
+   "get": {
+    "operationId": "get_config_config_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigEnvelope"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Get Config",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/constraints": {
+   "put": {
+    "operationId": "put_constraints_config_constraints_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/ConstraintDef"
+        },
+        "title": "Constraints",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigEnvelope"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Constraints",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/hash": {
+   "get": {
+    "operationId": "get_hash_config_hash_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Get Hash Config Hash Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Get Hash",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/metrics": {
+   "get": {
+    "operationId": "metric_names_config_metrics_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MetricsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Metric Names",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/parameters": {
+   "put": {
+    "operationId": "put_parameters_config_parameters_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/ParameterDef"
+        },
+        "title": "Parameters",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigEnvelope"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Parameters",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/plugins": {
+   "get": {
+    "operationId": "plugins_config_plugins_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Plugins Config Plugins Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Plugins",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/presets": {
+   "get": {
+    "operationId": "presets_config_presets_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/PresetRowOut"
+         },
+         "title": "Response Presets Config Presets Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Presets",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/presets/{name}": {
+   "post": {
+    "operationId": "save_preset_config_presets__name__post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "name",
+      "required": true,
+      "schema": {
+       "title": "Name",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigEnvelope"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Save Preset",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/presets/{name}/load": {
+   "post": {
+    "operationId": "load_preset_config_presets__name__load_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "name",
+      "required": true,
+      "schema": {
+       "title": "Name",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigEnvelope"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Load Preset",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/reset": {
+   "post": {
+    "description": "Reload the YAML registries from disk (developer convenience).",
+    "operationId": "reset_from_yaml_config_reset_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigEnvelope"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reset From Yaml",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/search": {
+   "put": {
+    "operationId": "put_search_config_search_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SearchSettings"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigEnvelope"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Search",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/terms": {
+   "put": {
+    "operationId": "put_terms_config_terms_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "items": {
+         "$ref": "#/components/schemas/ObjectiveTerm"
+        },
+        "title": "Terms",
+        "type": "array"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigEnvelope"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Terms",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/config/validate": {
+   "post": {
+    "description": "Dry-run terms/constraints against a sample namespace without saving (\u00a715.3).",
+    "operationId": "validate_config_validate_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ValidateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Validate Config Validate Post",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Validate",
+    "tags": [
+     "config"
+    ]
+   }
+  },
+  "/data/generate": {
+   "post": {
+    "operationId": "generate_instance_data_generate_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GenerateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InstanceCreated"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Generate Instance",
+    "tags": [
+     "data"
+    ]
+   }
+  },
+  "/data/import": {
+   "post": {
+    "description": "Import a full instance JSON (the generator's format; also the target for CSV import in Phase 4).",
+    "operationId": "import_instance_data_import_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Instance"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InstanceCreated"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Import Instance",
+    "tags": [
+     "data"
+    ]
+   }
+  },
+  "/data/instances": {
+   "get": {
+    "operationId": "list_instances_data_instances_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/InstanceRowOut"
+         },
+         "title": "Response List Instances Data Instances Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "List Instances",
+    "tags": [
+     "data"
+    ]
+   }
+  },
+  "/data/instances/{iid}": {
+   "delete": {
+    "operationId": "delete_instance_data_instances__iid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "iid",
+      "required": true,
+      "schema": {
+       "title": "Iid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeletedOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Instance",
+    "tags": [
+     "data"
+    ]
+   },
+   "get": {
+    "operationId": "get_instance_data_instances__iid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "iid",
+      "required": true,
+      "schema": {
+       "title": "Iid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Instance"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Instance",
+    "tags": [
+     "data"
+    ]
+   }
+  },
+  "/data/instances/{iid}/columns": {
+   "post": {
+    "operationId": "add_column_data_instances__iid__columns_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "iid",
+      "required": true,
+      "schema": {
+       "title": "Iid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ColumnRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Add Column Data Instances  Iid  Columns Post",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Column",
+    "tags": [
+     "edit"
+    ]
+   }
+  },
+  "/data/instances/{iid}/committed": {
+   "get": {
+    "operationId": "get_committed_data_instances__iid__committed_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "iid",
+      "required": true,
+      "schema": {
+       "title": "Iid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CommittedOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Committed",
+    "tags": [
+     "engine"
+    ]
+   }
+  },
+  "/data/instances/{iid}/committed/reset": {
+   "post": {
+    "description": "Clear today's committed decisions (undo all accepted plans); runs keep their record.",
+    "operationId": "reset_committed_data_instances__iid__committed_reset_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "iid",
+      "required": true,
+      "schema": {
+       "title": "Iid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CommittedOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reset Committed",
+    "tags": [
+     "engine"
+    ]
+   }
+  },
+  "/data/instances/{iid}/disruptions": {
+   "post": {
+    "operationId": "add_disruption_data_instances__iid__disruptions_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "iid",
+      "required": true,
+      "schema": {
+       "title": "Iid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DisruptionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Add Disruption Data Instances  Iid  Disruptions Post",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Disruption",
+    "tags": [
+     "edit"
+    ]
+   }
+  },
+  "/data/instances/{iid}/disruptions/{did}": {
+   "delete": {
+    "operationId": "remove_disruption_data_instances__iid__disruptions__did__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "iid",
+      "required": true,
+      "schema": {
+       "title": "Iid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "title": "Did",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Remove Disruption Data Instances  Iid  Disruptions  Did  Delete",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Remove Disruption",
+    "tags": [
+     "edit"
+    ]
+   }
+  },
+  "/data/instances/{iid}/summary": {
+   "get": {
+    "operationId": "get_summary_data_instances__iid__summary_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "iid",
+      "required": true,
+      "schema": {
+       "title": "Iid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Get Summary Data Instances  Iid  Summary Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Summary",
+    "tags": [
+     "data"
+    ]
+   }
+  },
+  "/data/instances/{iid}/table/{entity}": {
+   "get": {
+    "description": "Rows with attributes flattened (prefixed ``attr:``) plus the column list, for the database-style UI.",
+    "operationId": "table_data_instances__iid__table__entity__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "iid",
+      "required": true,
+      "schema": {
+       "title": "Iid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "entity",
+      "required": true,
+      "schema": {
+       "enum": [
+        "flights",
+        "aircraft",
+        "crews",
+        "airports",
+        "itineraries"
+       ],
+       "title": "Entity",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TableOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Table",
+    "tags": [
+     "edit"
+    ]
+   }
+  },
+  "/data/instances/{iid}/{entity}/{key}": {
+   "patch": {
+    "operationId": "patch_row_data_instances__iid___entity___key__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "iid",
+      "required": true,
+      "schema": {
+       "title": "Iid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "entity",
+      "required": true,
+      "schema": {
+       "enum": [
+        "flights",
+        "aircraft",
+        "crews",
+        "airports",
+        "itineraries"
+       ],
+       "title": "Entity",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "key",
+      "required": true,
+      "schema": {
+       "title": "Key",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-aeronexus-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Aeronexus-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PatchRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Patch Row Data Instances  Iid   Entity   Key  Patch",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Patch Row",
+    "tags": [
+     "edit"
+    ]
+   }
+  },
+  "/health": {
+   "get": {
+    "operationId": "health_health_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HealthOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Health",
+    "tags": [
+     "meta"
+    ]
+   }
+  },
+  "/recommend": {
+   "post": {
+    "operationId": "post_recommend_recommend_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RecommendRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Run"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Post Recommend",
+    "tags": [
+     "engine"
+    ]
+   }
+  },
+  "/runs": {
+   "get": {
+    "operationId": "list_runs_runs_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "instance_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Instance Id"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 50,
+       "title": "Limit",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/RunRowOut"
+         },
+         "title": "Response List Runs Runs Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Runs",
+    "tags": [
+     "engine"
+    ]
+   }
+  },
+  "/runs/{run_id}": {
+   "get": {
+    "operationId": "get_run_runs__run_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "run_id",
+      "required": true,
+      "schema": {
+       "title": "Run Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Run"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Run",
+    "tags": [
+     "engine"
+    ]
+   }
+  },
+  "/runs/{run_id}/decision": {
+   "post": {
+    "operationId": "decide_runs__run_id__decision_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "run_id",
+      "required": true,
+      "schema": {
+       "title": "Run Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Run"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Decide",
+    "tags": [
+     "engine"
+    ]
+   }
+  },
+  "/state": {
+   "get": {
+    "description": "Snapshot at decision time ``t`` (minutes from day start). Phase 1 projects known delays into etd/eta.",
+    "operationId": "get_state_state_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "instance_id",
+      "required": true,
+      "schema": {
+       "title": "Instance Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "t",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "T",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/State"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get State",
+    "tags": [
+     "data"
+    ]
+   }
+  },
+  "/timeline": {
+   "get": {
+    "description": "Baseline (\"do nothing\") propagation at decision time t: per-flight outcomes for the rotation view.",
+    "operationId": "timeline_timeline_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "instance_id",
+      "required": true,
+      "schema": {
+       "title": "Instance Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "t",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "title": "T",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TimelineOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Timeline",
+    "tags": [
+     "engine"
+    ]
+   }
+  },
+  "/timeline/plan": {
+   "post": {
+    "description": "Per-flight outcomes of the day once ``actions`` are applied at ``decision_time`` (the after view).",
+    "operationId": "plan_timeline_timeline_plan_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlanTimelineRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TimelineOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Plan Timeline",
+    "tags": [
+     "engine"
+    ]
+   }
+  },
+  "/whatif": {
+   "post": {
+    "description": "Evaluate a controller-chosen plan on the same engine and compare it with the recommendation.",
+    "operationId": "post_whatif_whatif_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WhatIfRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Run"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Post Whatif",
+    "tags": [
+     "engine"
+    ]
+   }
+  }
+ }
+}

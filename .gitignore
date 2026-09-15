@@ -31,3 +31,6 @@ desktop.ini
 
 # Google Drive / Windows folder metadata
 .tmp.driveupload/
+
+# Brainstorm visual companion sessions
+.superpowers/

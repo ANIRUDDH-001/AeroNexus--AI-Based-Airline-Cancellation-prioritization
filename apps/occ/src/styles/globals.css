@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ tokens: "Sodium night"
+   A dark room; what matters is lit. Warm graphite surfaces, ivory text, one warm colour (sodium amber)
+   reserved for what is lit up, and coral / mint / lilac for flight state. Depth comes from wells (cut in)
+   and panels (raised), never from shadows or gradients. See DESIGN.md and the spec, §3. */
+:root {
+  --graphite: #141518;
+  --well: #0d0e10;
+  --panel: #1b1c20;
+  --panel-2: #25262b;
+  --hairline: rgba(255, 255, 255, 0.07);
+  --hairline-strong: rgba(255, 255, 255, 0.13);
+  --ivory: #efeae0;
+  --ivory-2: #a8a399;
+  --ivory-3: #6c6862;
+  --amber: #f0b345;
+  --coral: #ff5f52;
+  --mint: #58d08f;
+  --lilac: #b39bf5;
+  --strip: #26272c;
+  --strip-text: #e6e1d6;
+  --strip-edge: #4a4b52;
+  --strip-delay: #302b22;
+  --strip-cancel: #2c1d1c;
+  --amber-soft: rgba(240, 179, 69, 0.12);
+  --coral-soft: rgba(255, 95, 82, 0.12);
+  --mint-soft: rgba(88, 208, 143, 0.12);
+  --lilac-soft: rgba(179, 155, 245, 0.12);
+  --ivory-soft: rgba(239, 234, 224, 0.06);
+  --radius-panel: 8px;
+  --radius-control: 6px;
+  --radius-strip: 3px;
+}
+
+@theme inline {
+  --color-graphite: var(--graphite);
+  --color-well: var(--well);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-ivory: var(--ivory);
+  --color-ivory-2: var(--ivory-2);
+  --color-ivory-3: var(--ivory-3);
+  --color-amber: var(--amber);
+  --color-coral: var(--coral);
+  --color-mint: var(--mint);
+  --color-lilac: var(--lilac);
+  --color-strip: var(--strip);
+  --color-strip-text: var(--strip-text);
+  --color-strip-edge: var(--strip-edge);
+  --color-strip-delay: var(--strip-delay);
+  --color-strip-cancel: var(--strip-cancel);
+  --color-amber-soft: var(--amber-soft);
+  --color-coral-soft: var(--coral-soft);
+  --color-mint-soft: var(--mint-soft);
+  --color-lilac-soft: var(--lilac-soft);
+  --color-ivory-soft: var(--ivory-soft);
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius-panel: var(--radius-panel);
+  --radius-control: var(--radius-control);
+  --radius-strip: var(--radius-strip);
+  --breakpoint-2xl: 96rem;
+}
+
+/* ------------------------------------------------------------------ base (layered, so utilities win) */
+@layer base {
+html {
+  color-scheme: dark;
+  background: var(--graphite);
+}
+body {
+  margin: 0;
+  background: var(--graphite);
+  color: var(--ivory);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: "wdth" 100;
+}
+* {
+  border-color: var(--hairline);
+}
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin: 0;
+}
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--ivory-3);
+  text-underline-offset: 3px;
+}
+a:hover {
+  text-decoration-color: var(--ivory);
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+::selection {
+  background: var(--ivory);
+  color: var(--graphite);
+}
+}
+
+/* the headline sentence: Archivo slightly condensed, the departure-board voice without caps */
+.headline {
+  font-weight: 600;
+  font-variation-settings: "wdth" 90;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+}
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* thin scrollbars inside boards and tables */
+.scroll-thin::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--hairline-strong);
+  border-radius: 4px;
+}
+
+/* safe areas for the phone chrome */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* motion that answers an action: the after-view emphasis and the working bar */
+@keyframes emphasis {
+  0% { box-shadow: 0 0 0 0 rgba(239, 234, 224, 0.55); filter: brightness(1.35); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 234, 224, 0); filter: brightness(1); }
+}
+@keyframes progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+@keyframes halo {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}

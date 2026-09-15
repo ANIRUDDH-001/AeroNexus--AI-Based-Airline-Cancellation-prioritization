@@ -1,0 +1,25 @@
+{
+  "name": "AeroNexus",
+  "short_name": "AeroNexus",
+  "description": "Cancellation prioritisation for flight disruptions: simulate the day, rank the options, explain the choice.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#141518",
+  "theme_color": "#141518",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -77,8 +77,9 @@ aeronexus-gen --size medium --seed 1 --disruption fog:DEL --validate --summary
 # API
 uvicorn aeronexus_api.main:app --reload --port 8000          # http://127.0.0.1:8000/docs
 
-# Web (Node 22)
-cd apps/web && npm install && npm run dev                    # http://localhost:5173 (proxies /api -> :8000)
+# Console (Node 22)
+cd apps/occ && npm install && npm run dev                    # http://localhost:3000 (proxies /api -> :8000)
+# the previous UI still runs: cd apps/web && npm run dev     # http://localhost:5173
 ```
 
 ## Reproduce the numbers
@@ -109,12 +110,13 @@ and depth, the engine version and the controller's decision.
 ## Repository layout
 
 ```
-apps/api        FastAPI service            apps/web        React UI (Vite, Tailwind v4)
+apps/api        FastAPI service            apps/occ        the console (Next.js 16, Tailwind v4)
+apps/web        previous UI (Vite), kept until the Vercel switch
 packages/core   engine                     packages/datagen synthetic generator
 packages/ml     surrogate pre-ranker       configs/        YAML registries + presets
 data/cases      12 hand-crafted cases      data/benchmarks ladder results
 data/static-runs offline demo bundle       data/instances  generated days (git-ignored)
-docs/           plan, brief, ADRs, deploy  scripts/        precompute_demo.py
+docs/           plan, brief, ADRs, deploy, specs   scripts/  precompute_demo.py, check_static_parity.py, export_openapi.py
 tests/          pytest suite               render.yaml     Render blueprint (API)
 ```
 

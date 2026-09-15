@@ -55,11 +55,19 @@ Local Docker equivalent (same image Render would build): `docker build -f apps/a
 
 ## 3. Web on Vercel
 
-1. Vercel → *Add New Project* → import the repo, set **Root Directory** to `apps/web` (framework: Vite).
-2. Environment variable `VITE_API_URL=https://<service>.onrender.com` (no trailing slash).
-3. Deploy. `apps/web/vercel.json` rewrites every route to `index.html` except `/static-runs/*`.
-4. Before each deploy that should carry a fresh fallback bundle, run `python scripts/precompute_demo.py`
-   and commit `data/static-runs/` — `vite build` copies it into `dist/static-runs/`.
+The console is `apps/occ` (Next.js). `apps/web` (Vite) is the previous UI and stays deployable until the
+switch is done.
+
+1. Vercel → *Add New Project* → import the repo, set **Root Directory** to `apps/occ` (framework: Next.js is
+   detected). To switch an existing project, change its Root Directory in *Settings → General* and redeploy.
+2. Environment variables: `NEXT_PUBLIC_API_URL=https://<service>.onrender.com` (no trailing slash) and, if the
+   API has `AERONEXUS_WRITE_KEY`, `NEXT_PUBLIC_API_KEY` with the same value.
+3. Deploy. `prebuild` copies `data/static-runs/` into `public/static-runs/`; `apps/occ/vercel.json` sets cache
+   headers for the bundle and the service worker.
+4. Before each deploy that should carry a fresh fallback bundle: `python scripts/precompute_demo.py`,
+   `python scripts/check_static_parity.py`, commit `data/static-runs/`.
+5. After a change to the API's response models: `python scripts/export_openapi.py` and, in `apps/occ`,
+   `npm run api:types`; commit both (`tests/test_api_schemas.py` fails otherwise).
 
 ## 4. Pitch day: Cloudflare Tunnel (no cold start, full laptop CPU)
 
