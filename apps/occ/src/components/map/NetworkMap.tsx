@@ -15,6 +15,7 @@ const H = 300;
 const HALO = 9; // one fixed halo for every lit airport, so blooms never merge into a wash (spec §5.3)
 const HALO_DISRUPTED = 18;
 const MAX_LABELS = 14; // beyond this the panel is a wall of text; the rest keep their dot, tooltip and aria-label
+const MAX_HALOS = 12; // halos mark the worst airports of the day, not every airport with one late flight
 
 /** India at night (spec §5.3): the network as arcs, airports as amber lights sized by risk, disrupted airports
  *  with a lilac halo whose pulse is driven by one clock for the whole map. Situational awareness, not the
@@ -76,10 +77,24 @@ export function NetworkMap({ airports, flights, disruptions, diff, selected, onS
   const disrupted = useMemo(() => new Map(disruptions.filter((d) => byCode.has(d.target)).map((d) => [d.target, d])), [disruptions, byCode]);
   // which airports get a label: disrupted first, then hubs, then by risk, capped; the selected one always
   const labelled = useMemo(() => {
-    const score = (a: MapAirport) => (disrupted.has(a.code) ? 1_000_000 : 0) + (a.is_hub ? 100_000 : 0) + (perAirport.get(a.code)?.risk ?? 0);
-    const top = [...airports].filter((a) => a.is_hub || (perAirport.get(a.code)?.risk ?? 0) > 0 || disrupted.has(a.code)).sort((x, y) => score(y) - score(x)).slice(0, MAX_LABELS).map((a) => a.code);
-    return new Set(selected ? [...top, selected] : top);
-  }, [airports, disrupted, perAirport, selected]);
+    const score = (a: MapAirport) => (a.code === selected ? 10_000_000 : 0) + (disrupted.has(a.code) ? 1_000_000 : 0) + (a.is_hub ? 100_000 : 0) + (perAirport.get(a.code)?.risk ?? 0);
+    const placed: [number, number][] = [];
+    const out = new Set<string>();
+    for (const a of [...airports].filter((a) => a.is_hub || (perAirport.get(a.code)?.risk ?? 0) > 0 || disrupted.has(a.code) || a.code === selected).sort((x, y) => score(y) - score(x))) {
+      if (out.size >= MAX_LABELS) break;
+      const q = proj([a.lon, a.lat]);
+      if (!q) continue;
+      if (placed.some(([x, y]) => Math.abs(x - q[0]) < 46 && Math.abs(y - q[1]) < 12)) continue;
+      placed.push([q[0], q[1]]);
+      out.add(a.code);
+    }
+    return out;
+  }, [airports, disrupted, perAirport, selected, proj]);
+  // the day's own scale: arcs and halos are relative to the worst route and airport today, so a heavy day does not
+  // saturate into one red wash and a quiet day still shows where the little risk is
+  const maxRouteRisk = useMemo(() => Math.max(1, ...routes.map((r) => r.risk)), [routes]);
+  const maxCancelled = useMemo(() => Math.max(1, ...routes.map((r) => r.cancelled)), [routes]);
+  const haloed = useMemo(() => new Set([...perAirport.entries()].filter(([, v]) => v.risk > 0).sort((x, y) => y[1].risk - x[1].risk).slice(0, MAX_HALOS).map(([k]) => k)), [perAirport]);
   const aogAt = useMemo(() => {
     const tails = new Set(disruptions.filter((d) => d.type === "AOG").map((d) => d.target));
     const at = new Map<string, string[]>();
@@ -135,7 +150,8 @@ export function NetworkMap({ airports, flights, disruptions, diff, selected, onS
         if (!d) return null;
         const bad = r.cancelled > 0;
         const risk = r.risk > 0;
-        return <path key={`${r.a}-${r.b}`} d={d} fill="none" stroke={bad ? "#FF5F52" : risk ? "#F0B345" : "#EFEAE0"} strokeOpacity={bad ? 0.7 : risk ? Math.min(0.85, 0.5 + r.risk * 0.1) : 0.14} strokeWidth={Math.min(2.4, 0.6 + r.n * 0.15)} />;
+        const opacity = bad ? 0.3 + 0.45 * (r.cancelled / maxCancelled) : risk ? 0.18 + 0.6 * (r.risk / maxRouteRisk) : routes.length > 60 ? 0.06 : 0.14;
+        return <path key={`${r.a}-${r.b}`} d={d} fill="none" stroke={bad ? "#FF5F52" : risk ? "#F0B345" : "#EFEAE0"} strokeOpacity={opacity} strokeWidth={Math.min(2.4, 0.6 + r.n * 0.15)} />;
       })}
       {airports.map((a) => {
         const p = pt(a.code);
@@ -147,14 +163,15 @@ export function NetworkMap({ airports, flights, disruptions, diff, selected, onS
         const sel = selected === a.code;
         const delta = diff?.airportDelta.get(a.code);
         const lit = risk > 0 || a.is_hub;
+        const halo = a.is_hub || haloed.has(a.code);
         return (
           <g key={a.code}>
             {dis && <circle cx={p[0]} cy={p[1]} r={HALO_DISRUPTED} fill="url(#ax-halo-lilac)" className={pulseIds.has(dis.id) ? "animate-[halo_2.4s_ease-in-out_infinite]" : undefined} style={pulseIds.has(dis.id) ? { animationDelay: "var(--phase, 0ms)" } : { opacity: 0.85 }} />}
-            {lit && <circle cx={p[0]} cy={p[1]} r={HALO} fill="url(#ax-halo)" />}
+            {halo && <circle cx={p[0]} cy={p[1]} r={HALO} fill="url(#ax-halo)" />}
             <circle cx={p[0]} cy={p[1]} r={r} fill={lit ? "#F0B345" : "#A8A399"} stroke={sel ? "#EFEAE0" : "none"} strokeWidth={sel ? 1.5 : 0} />
             {aogAt.get(a.code)?.map((t, i) => <rect key={t} x={p[0] + r + 2 + i * 5} y={p[1] - r - 5} width={3.5} height={3.5} fill="#FF5F52" />)}
             {labelled.has(a.code) && (
-              <text x={p[0] + r + 4} y={p[1] + 3.5} fontSize={9.5} fontWeight={600} fill={a.is_hub ? "#EFEAE0" : "#A8A399"} fontFamily="inherit">
+              <text x={p[0] + r + 4} y={p[1] + 3.5} fontSize={9.5} fontWeight={600} fill={a.is_hub ? "#EFEAE0" : "#A8A399"} fontFamily="inherit" paintOrder="stroke" stroke="#0D0E10" strokeWidth={2.5} strokeLinejoin="round">
                 {a.code}
                 {risk > 0 && (
                   <tspan fill="#F0B345" fontWeight={500}>
@@ -172,7 +189,7 @@ export function NetworkMap({ airports, flights, disruptions, diff, selected, onS
               </text>
             )}
             {dis && (
-              <text x={p[0] + r + 4} y={p[1] + 14} fontSize={8.5} fill="#B39BF5" fontFamily="inherit">
+              <text x={p[0] + r + 4} y={p[1] + 14} fontSize={8.5} fill="#B39BF5" fontFamily="inherit" paintOrder="stroke" stroke="#0D0E10" strokeWidth={2.5} strokeLinejoin="round">
                 {disruptionName(dis.type).toLowerCase()}
               </text>
             )}
