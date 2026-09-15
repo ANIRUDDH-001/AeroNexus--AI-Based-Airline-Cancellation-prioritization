@@ -22,6 +22,7 @@ from aeronexus_core.cases import CASES_DIR, CaseResult, load_case, run_case
 from aeronexus_core.config.registry import config_hash
 
 from .. import storage
+from ..schemas import BenchmarkOut, CaseDefOut, CasesRunOut
 from .engine import surrogate
 
 router = APIRouter(tags=["validation"])
@@ -55,7 +56,7 @@ def _expected_summary(exp: dict[str, Any]) -> list[str]:
     return out
 
 
-@router.get("/cases")
+@router.get("/cases", response_model=list[CaseDefOut])
 def list_cases() -> list[dict]:
     rows = []
     for p in _case_files():
@@ -84,7 +85,7 @@ class CasesRunRequest(BaseModel):
     use_surrogate: bool = False
 
 
-@router.post("/cases/run")
+@router.post("/cases/run", response_model=CasesRunOut)
 def run_cases(req: CasesRunRequest) -> dict:
     global _LATEST_CASES
     cfg, row = storage.get_config()
@@ -105,14 +106,14 @@ def run_cases(req: CasesRunRequest) -> dict:
     return out
 
 
-@router.get("/cases/latest")
+@router.get("/cases/latest", response_model=CasesRunOut)
 def latest_cases() -> dict:
     if _LATEST_CASES is None:
         raise HTTPException(status_code=404, detail="no case run yet")
     return _LATEST_CASES
 
 
-@router.get("/benchmark/latest")
+@router.get("/benchmark/latest", response_model=BenchmarkOut)
 def latest_benchmark() -> dict:
     p = BENCH_DIR / "latest.json"
     if not p.exists():
@@ -132,7 +133,7 @@ class BenchmarkRunRequest(BaseModel):
     save: bool = False
 
 
-@router.post("/benchmark/run")
+@router.post("/benchmark/run", response_model=BenchmarkOut)
 def run_bench(req: BenchmarkRunRequest) -> dict:
     """Small ladder run so the current configuration can be checked from the UI; the full 30-scenario run
     stays a CLI job (python -m aeronexus_core.benchmark)."""

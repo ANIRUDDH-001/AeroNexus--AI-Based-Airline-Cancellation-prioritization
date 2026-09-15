@@ -14,6 +14,7 @@ from aeronexus_core.validate import validate_instance
 
 from .. import settings, storage
 from ..narration import narrate
+from ..schemas import CommittedOut, RunRowOut, TimelineOut
 
 try:
     from aeronexus_ml import load_default as _load_surrogate
@@ -129,7 +130,7 @@ def post_whatif(req: WhatIfRequest) -> Run:
     return _finish(run, inst, req.instance_id)
 
 
-@router.get("/timeline")
+@router.get("/timeline", response_model=TimelineOut)
 def timeline(instance_id: str, t: int = 0) -> dict:
     """Baseline ("do nothing") propagation at decision time t: per-flight outcomes for the rotation view."""
     inst = storage.get_instance(instance_id)
@@ -152,10 +153,13 @@ def committed_summary(inst: Instance) -> dict:
             "count": len(c.cancelled) + len(c.delays) + len(c.swaps)}
 
 
-def build_timeline(inst, cfg, t: int, instance_id: str) -> dict:
+def build_timeline(inst, cfg, t: int, instance_id: str, actions: list[Action] | None = None) -> dict:
     """Pure builder shared by the endpoint and the static-runs precompute script. Starts from the day's
-    committed decisions, so accepted plans show up as cancelled-by-plan legs and are not re-proposed."""
+    committed decisions, so accepted plans show up as cancelled-by-plan legs and are not re-proposed.
+    With ``actions`` it shows the day *after* that plan (the board's before/after view)."""
     st = State(clock=t, instance=inst, decisions=inst.committed)
+    for a in actions or []:
+        st = st.apply(a)
     res = Simulator(inst, cfg).run(st.decisions, clock=t)
     risk = {r.flight_id: r for r in detect_at_risk(st, res, cfg)}
     flights = []
@@ -191,7 +195,24 @@ def build_timeline(inst, cfg, t: int, instance_id: str) -> dict:
     }
 
 
-@router.get("/runs")
+class PlanTimelineRequest(BaseModel):
+    instance_id: str
+    decision_time: int = Field(default=0, ge=0)
+    actions: list[Action]
+
+
+@router.post("/timeline/plan", response_model=TimelineOut)
+def plan_timeline(req: PlanTimelineRequest) -> dict:
+    """Per-flight outcomes of the day once ``actions`` are applied at ``decision_time`` (the after view)."""
+    inst = storage.get_instance(req.instance_id)
+    if inst is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+    _check_actions(inst, req.actions)
+    cfg, _ = storage.get_config()
+    return build_timeline(inst, cfg, req.decision_time, req.instance_id, req.actions)
+
+
+@router.get("/runs", response_model=list[RunRowOut])
 def list_runs(instance_id: str | None = None, limit: int = 50) -> list[dict]:
     return storage.list_runs(instance_id, limit)
 
@@ -238,7 +259,7 @@ def decide(run_id: str, req: DecisionRequest) -> Run:
     return run
 
 
-@router.get("/data/instances/{iid}/committed")
+@router.get("/data/instances/{iid}/committed", response_model=CommittedOut)
 def get_committed(iid: str) -> dict:
     inst = storage.get_instance(iid)
     if inst is None:
@@ -246,7 +267,7 @@ def get_committed(iid: str) -> dict:
     return committed_summary(inst)
 
 
-@router.post("/data/instances/{iid}/committed/reset")
+@router.post("/data/instances/{iid}/committed/reset", response_model=CommittedOut)
 def reset_committed(iid: str) -> dict:
     """Clear today's committed decisions (undo all accepted plans); runs keep their record."""
     inst = storage.get_instance(iid)

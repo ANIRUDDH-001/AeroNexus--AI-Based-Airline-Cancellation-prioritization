@@ -16,6 +16,7 @@ from aeronexus_datagen.disruptions import inject, parse_spec
 
 from .. import storage
 from ..auth import require_write_key
+from ..schemas import TableOut
 
 router = APIRouter(prefix="/data/instances/{iid}", tags=["edit"])
 write = APIRouter(prefix="/data/instances/{iid}", tags=["edit"], dependencies=[Depends(require_write_key)])
@@ -38,7 +39,7 @@ def _store(iid: str, inst: Instance) -> dict:
     return {"id": iid, "summary": inst.summary(), "issues": issues}
 
 
-@router.get("/table/{entity}")
+@router.get("/table/{entity}", response_model=TableOut)
 def table(iid: str, entity: Entity) -> dict:
     """Rows with attributes flattened (prefixed ``attr:``) plus the column list, for the database-style UI."""
     return build_table(_load(iid), entity)

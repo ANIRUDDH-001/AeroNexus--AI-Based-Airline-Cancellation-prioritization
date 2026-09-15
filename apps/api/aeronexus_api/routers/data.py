@@ -14,6 +14,7 @@ from aeronexus_datagen.disruptions import inject, parse_spec
 
 from .. import storage
 from ..auth import require_write_key
+from ..schemas import DeletedOut, InstanceRowOut
 
 router = APIRouter(tags=["data"])
 write = APIRouter(tags=["data"], dependencies=[Depends(require_write_key)])
@@ -60,7 +61,7 @@ def import_instance(inst: Instance) -> InstanceCreated:
     return InstanceCreated(id=iid, summary=inst.summary(), issues=[])
 
 
-@router.get("/data/instances")
+@router.get("/data/instances", response_model=list[InstanceRowOut])
 def list_instances() -> list[dict]:
     return storage.list_instances()
 
@@ -81,7 +82,7 @@ def get_summary(iid: str) -> dict:
     return inst.summary()
 
 
-@write.delete("/data/instances/{iid}")
+@write.delete("/data/instances/{iid}", response_model=DeletedOut)
 def delete_instance(iid: str) -> dict:
     if not storage.delete_instance(iid):
         raise HTTPException(status_code=404, detail="instance not found")

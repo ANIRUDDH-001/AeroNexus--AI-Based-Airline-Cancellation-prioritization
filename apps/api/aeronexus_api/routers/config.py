@@ -18,6 +18,7 @@ from aeronexus_core.scoring import Metrics, validate_terms
 
 from .. import settings, storage
 from ..auth import require_write_key
+from ..schemas import MetricsOut, PresetRowOut
 
 router = APIRouter(prefix="/config", tags=["config"])
 write = APIRouter(prefix="/config", tags=["config"], dependencies=[Depends(require_write_key)])
@@ -51,7 +52,7 @@ def plugins() -> dict:
     return {pid: {"phase": cls.phase} for pid, cls in available_plugins().items()}
 
 
-@router.get("/metrics")
+@router.get("/metrics", response_model=MetricsOut)
 def metric_names() -> dict:
     return {"metrics": Metrics.names()}
 
@@ -125,7 +126,7 @@ def save_preset(name: str) -> ConfigEnvelope:
     return _envelope(cfg, row)
 
 
-@router.get("/presets")
+@router.get("/presets", response_model=list[PresetRowOut])
 def presets() -> list[dict]:
     return storage.list_presets()
 

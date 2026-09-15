@@ -16,6 +16,7 @@ from .routers import config as config_router
 from .routers import data as data_router
 from .routers import edit as edit_router
 from .routers import engine as engine_router
+from .schemas import HealthOut
 
 
 @asynccontextmanager
@@ -55,7 +56,7 @@ app.include_router(engine_router.router)
 app.include_router(cases_router.router)
 
 
-@app.get("/health", tags=["meta"])
+@app.get("/health", tags=["meta"], response_model=HealthOut)
 def health() -> dict:
     _, row = storage.get_config()
     return {
