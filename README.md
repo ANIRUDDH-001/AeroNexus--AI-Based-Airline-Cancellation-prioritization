@@ -114,7 +114,8 @@ packages/core   engine                     packages/datagen synthetic generator
 packages/ml     surrogate pre-ranker       configs/        YAML registries + presets
 data/cases      12 hand-crafted cases      data/benchmarks ladder results
 data/static-runs offline demo bundle       data/instances  generated days (git-ignored)
-docs/           plan, brief, ADRs, deploy, specs   scripts/  precompute_demo.py, check_static_parity.py, export_openapi.py
+docs/           plan, brief, ADRs, deploy, specs, console-walkthrough.md, large-day-analysis.md
+scripts/        precompute_demo.py, check_static_parity.py, export_openapi.py
 tests/          pytest suite               render.yaml     Render blueprint (API)
 ```
 
