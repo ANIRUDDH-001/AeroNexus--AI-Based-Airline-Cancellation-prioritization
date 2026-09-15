@@ -22,6 +22,8 @@ export function NetworkMap({ airports, flights, disruptions, diff, selected, onS
   const [geo, setGeo] = useState<FeatureCollection | null>(null);
   const [geoFailed, setGeoFailed] = useState(false);
   useEffect(() => {
+    // boundaries as depicted by the Government of India (Survey of India): built from Natural Earth's India
+    // point-of-view dataset by scripts/build-geo.mjs, never from the default de-facto lines
     fetch("/geo/south-asia.json")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("map data"))))
       .then(setGeo)
@@ -35,7 +37,7 @@ export function NetworkMap({ airports, flights, disruptions, diff, selected, onS
     if (el) el.style.setProperty("--phase", `${-(performance.now() % 2400)}ms`);
   };
 
-  const proj = useMemo(() => geoMercator().fitExtent([[18, 12], [W - 18, height - 12]], { type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[67, 6], [67, 36], [98, 36], [98, 6], [67, 6]]] } }] } as FeatureCollection), [height]);
+  const proj = useMemo(() => geoMercator().fitExtent([[18, 12], [W - 18, height - 12]], { type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[66.5, 5.5], [66.5, 37.6], [97.8, 37.6], [97.8, 5.5], [66.5, 5.5]]] } }] } as FeatureCollection), [height]);
   const path = useMemo(() => geoPath(proj), [proj]);
   const byCode = useMemo(() => new Map(airports.map((a) => [a.code, a])), [airports]);
   const pt = (code: string): [number, number] | null => {
