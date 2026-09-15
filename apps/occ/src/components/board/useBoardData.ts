@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { Disruption, Timeline, TimelineFlight } from "@/lib/api";
-import { stripState, type Diff } from "@/lib/diff";
+import type { Diff } from "@/lib/diff";
 
 /** Board layout data, computed once per timeline (spec §10.2): rows sorted by risk, legs per row, the time
  *  window, and the text each strip can afford at its width. */

@@ -94,6 +94,7 @@ export function NetworkMap({ airports, flights, disruptions, diff, selected, onS
   // saturate into one red wash and a quiet day still shows where the little risk is
   const maxRouteRisk = useMemo(() => Math.max(1, ...routes.map((r) => r.risk)), [routes]);
   const maxCancelled = useMemo(() => Math.max(1, ...routes.map((r) => r.cancelled)), [routes]);
+  const maxRisk = useMemo(() => Math.max(1, ...[...perAirport.values()].map((v) => v.risk)), [perAirport]);
   const haloed = useMemo(() => new Set([...perAirport.entries()].filter(([, v]) => v.risk > 0).sort((x, y) => y[1].risk - x[1].risk).slice(0, MAX_HALOS).map(([k]) => k)), [perAirport]);
   const aogAt = useMemo(() => {
     const tails = new Set(disruptions.filter((d) => d.type === "AOG").map((d) => d.target));
@@ -158,7 +159,7 @@ export function NetworkMap({ airports, flights, disruptions, diff, selected, onS
         if (!p) return null;
         const s = perAirport.get(a.code);
         const risk = s?.risk ?? 0;
-        const r = 2 + Math.min(4, Math.sqrt(risk));
+        const r = 2 + 4 * Math.sqrt(risk / maxRisk); // relative to the worst airport today
         const dis = disrupted.get(a.code);
         const sel = selected === a.code;
         const delta = diff?.airportDelta.get(a.code);
