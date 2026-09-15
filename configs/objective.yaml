@@ -63,7 +63,7 @@ objective_terms:
     level: L3
     expression: compensation_inr
     weight: 0.001
-    description: DGCA CAR Sec 3 Series M Part IV compensation for cancellations attributable to the airline (AOG, crew). Cancellations caused by weather, ATC or airport closures are exempt under the CAR and are reported separately as compensation_exempt_inr. Tariffs in parameters.yaml - VERIFY current CAR.
+    description: DGCA CAR Sec 3 Series M Part IV compensation for cancellations attributable to the airline (AOG, crew). Cancellations caused by weather, ATC or airport closures are exempt under the CAR and are reported separately as compensation_exempt_inr. The tariffs are the cost values below; check them against the current CAR before relying on the rupee figures.
   - name: hotel_meal
     level: L3
     expression: pax_stranded_overnight * hotel_meal_rate_inr

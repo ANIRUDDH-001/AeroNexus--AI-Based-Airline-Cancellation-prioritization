@@ -25,7 +25,7 @@ export const NAV = [
 // on tablets only the three working pages stay as tabs; the rest sit behind "More"
 const TABLET_TABS = new Set(["/", "/flights", "/runs"]);
 
-export function Wordmark() {
+function Wordmark() {
   return (
     <span className="inline-flex items-center gap-2 text-[14px] font-bold tracking-[-0.01em] text-ivory">
       <span aria-hidden className="relative inline-block size-[18px] rounded-[5px] bg-ivory">

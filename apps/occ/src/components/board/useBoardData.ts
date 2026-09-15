@@ -8,8 +8,8 @@ import { stripState, type Diff } from "@/lib/diff";
 export type Window = "day" | "12h" | "6h";
 export type BoardView = "before" | "after" | "changes";
 
-export const DAY_START = 0;
-export const DAY_END = 27 * 60; // late arrivals spill past midnight
+const DAY_START = 0;
+const DAY_END = 27 * 60; // late arrivals spill past midnight
 
 export type Row = { tail: string; legs: TimelineFlight[]; atRisk: number; forced: number; aog: boolean; touched: boolean };
 
@@ -60,4 +60,3 @@ export function useBoardData(timeline: Timeline | null, after: Timeline | null, 
   }, [timeline, after, diff, opts.query, opts.onlyAtRisk, opts.view, opts.airport]);
 }
 
-export { stripState };

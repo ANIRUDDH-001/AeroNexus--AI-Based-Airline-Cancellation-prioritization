@@ -10,7 +10,7 @@ const subscribe = (l: () => void) => staticMode.subscribe(() => l());
 const getSnapshot = () => staticMode.active;
 
 /** Whether the console is currently answered by the precomputed bundle instead of the engine. */
-export function useDemoMode(): boolean {
+function useDemoMode(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, () => false);
 }
 

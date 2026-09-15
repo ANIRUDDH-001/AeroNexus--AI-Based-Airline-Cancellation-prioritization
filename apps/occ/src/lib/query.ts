@@ -17,7 +17,7 @@ export function makeQueryClient(): QueryClient {
 }
 
 /** A short stable key for a list of actions, so two identical plans share one cached after-view. */
-export function actionsKey(actions: Action[]): string {
+function actionsKey(actions: Action[]): string {
   return actions.map((a) => `${a.type}:${[...(a.target_flights ?? [])].sort().join(",")}:${JSON.stringify(a.params ?? {})}`).join("|");
 }
 

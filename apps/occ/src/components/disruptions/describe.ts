@@ -23,7 +23,7 @@ export function targetKind(type: string): "airport" | "tail" | "flight" {
 }
 
 /** The severity in words: "45% of normal capacity", "3 crews", "90 min". */
-export function severityWords(sev: Record<string, unknown> | undefined): string {
+function severityWords(sev: Record<string, unknown> | undefined): string {
   const s = sev ?? {};
   const bits: string[] = [];
   if (s.capacity_fraction != null) bits.push(`${Math.round(Number(s.capacity_fraction) * 100)}% of normal capacity`);
@@ -34,7 +34,7 @@ export function severityWords(sev: Record<string, unknown> | undefined): string 
   return bits.join(", ");
 }
 
-export function windowWords(d: Pick<Disruption, "start" | "end_nominal" | "end_distribution">): string {
+function windowWords(d: Pick<Disruption, "start" | "end_nominal" | "end_distribution">): string {
   const end = d.end_nominal == null ? "the rest of the day" : `${d.end_distribution ? "about " : ""}${hhmm(d.end_nominal)}`;
   return `from ${hhmm(d.start)} to ${end}${d.end_distribution ? " (end time uncertain)" : ""}`;
 }

@@ -160,7 +160,7 @@ export type StaticIndex = {
   runs: RunRow[];
   files: string[];
 };
-export const STATIC_ID = "static-demo";
+const STATIC_ID = "static-demo";
 let staticIndex: Promise<StaticIndex | null> | null = null;
 const staticFiles = new Map<string, Promise<unknown>>();
 

@@ -6,7 +6,7 @@ import { Define } from "@/components/ui/overlay";
 import { Pill } from "@/components/ui/pill";
 import { cn } from "@/lib/utils";
 
-export const HEADLINE_METRICS: [string, "count" | "inr" | "min"][] = [
+const HEADLINE_METRICS: [string, "count" | "inr" | "min"][] = [
   ["forced_downstream_cancellations", "count"],
   ["pax_stranded_overnight", "count"],
   ["misconnects", "count"],
@@ -140,7 +140,7 @@ export function ScoreDefine({ plan, run }: { plan: Plan; run: Run }) {
   const base = run.baseline_metrics ? run.plans.find((p) => !p.actions.length)?.nis : undefined;
   return (
     <Define label="Network impact" short={`Network impact ${fmt(plan.nis)}${base != null ? ` against ${fmt(base)} if nobody acts` : ""}. ${GLOSSARY.network_impact.short}`} long={GLOSSARY.network_impact.long} className="text-ivory-3">
-      score
+      network impact score
     </Define>
   );
 }

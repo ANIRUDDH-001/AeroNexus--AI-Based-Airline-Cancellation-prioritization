@@ -14,6 +14,7 @@ const W = 400;
 const H = 300;
 const HALO = 9; // one fixed halo for every lit airport, so blooms never merge into a wash (spec §5.3)
 const HALO_DISRUPTED = 18;
+const MAX_LABELS = 14; // beyond this the panel is a wall of text; the rest keep their dot, tooltip and aria-label
 
 /** India at night (spec §5.3): the network as arcs, airports as amber lights sized by risk, disrupted airports
  *  with a lilac halo whose pulse is driven by one clock for the whole map. Situational awareness, not the
@@ -73,6 +74,12 @@ export function NetworkMap({ airports, flights, disruptions, diff, selected, onS
     return m;
   }, [flights]);
   const disrupted = useMemo(() => new Map(disruptions.filter((d) => byCode.has(d.target)).map((d) => [d.target, d])), [disruptions, byCode]);
+  // which airports get a label: disrupted first, then hubs, then by risk, capped; the selected one always
+  const labelled = useMemo(() => {
+    const score = (a: MapAirport) => (disrupted.has(a.code) ? 1_000_000 : 0) + (a.is_hub ? 100_000 : 0) + (perAirport.get(a.code)?.risk ?? 0);
+    const top = [...airports].filter((a) => a.is_hub || (perAirport.get(a.code)?.risk ?? 0) > 0 || disrupted.has(a.code)).sort((x, y) => score(y) - score(x)).slice(0, MAX_LABELS).map((a) => a.code);
+    return new Set(selected ? [...top, selected] : top);
+  }, [airports, disrupted, perAirport, selected]);
   const aogAt = useMemo(() => {
     const tails = new Set(disruptions.filter((d) => d.type === "AOG").map((d) => d.target));
     const at = new Map<string, string[]>();
@@ -146,7 +153,7 @@ export function NetworkMap({ airports, flights, disruptions, diff, selected, onS
             {lit && <circle cx={p[0]} cy={p[1]} r={HALO} fill="url(#ax-halo)" />}
             <circle cx={p[0]} cy={p[1]} r={r} fill={lit ? "#F0B345" : "#A8A399"} stroke={sel ? "#EFEAE0" : "none"} strokeWidth={sel ? 1.5 : 0} />
             {aogAt.get(a.code)?.map((t, i) => <rect key={t} x={p[0] + r + 2 + i * 5} y={p[1] - r - 5} width={3.5} height={3.5} fill="#FF5F52" />)}
-            {(a.is_hub || risk > 0) && (
+            {labelled.has(a.code) && (
               <text x={p[0] + r + 4} y={p[1] + 3.5} fontSize={9.5} fontWeight={600} fill={a.is_hub ? "#EFEAE0" : "#A8A399"} fontFamily="inherit">
                 {a.code}
                 {risk > 0 && (

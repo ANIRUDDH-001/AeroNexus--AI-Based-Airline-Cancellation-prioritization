@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { api, needsWriteKey, type Plan, type Run, type Timeline, type TimelineFlight } from "@/lib/api";
 import { keys } from "@/lib/query";
 import { diffTimelines, type Diff } from "@/lib/diff";
-import { fmt, hhmm, inr, minutes, seconds } from "@/lib/format";
+import { fmt, hhmm, inr, minutes, plural, seconds } from "@/lib/format";
 import { GLOSSARY, term } from "@/lib/glossary";
 import { useEngine } from "@/hooks/useEngine";
 import { usePlanTimeline } from "@/hooks/useTimeline";
@@ -109,13 +109,17 @@ export function PlansSection({
 
   const s = timeline.summary;
   const baseline = run?.baseline_metrics ?? {};
+  // the budget ran out before a single action was simulated: only "do nothing" was scored, so nothing is recommended
+  const exhausted = !!run && run.depth_reached === 0 && run.plans_evaluated <= 1;
+  const cfgQ = useQuery({ queryKey: keys.config, queryFn: () => api.config(), staleTime: 5 * 60_000, enabled: exhausted });
+  const budgetMs = cfgQ.data?.data.config.search?.latency_budget_ms;
   const canDecide = !!run && !demo && state === "online" && run.accepted_plan == null && !run.override_reason;
   const disabledReason = demo ? "Unavailable while the engine is asleep; wake it to decide." : run?.accepted_plan != null ? "A plan is already accepted at this decision time." : run?.override_reason ? "An override is recorded at this decision time." : null;
   const status = (p: Plan): PlanStatus | null => {
     if (!run) return null;
     if (run.accepted_plan != null) return run.accepted_plan === p.rank ? { kind: "accepted", at: run.decision_time } : null;
     if (run.override_reason) return p.rank === 1 ? { kind: "overridden", reason: run.override_reason } : null;
-    return p.rank === 1 ? { kind: "recommended" } : null;
+    return p.rank === 1 && !exhausted ? { kind: "recommended" } : null;
   };
   const decided = run && (run.accepted_plan != null || !!run.override_reason);
   const acceptedPlan = run && run.accepted_plan != null ? run.plans.find((p) => p.rank === run.accepted_plan) ?? null : null;
@@ -137,7 +141,7 @@ export function PlansSection({
           <>
             <OriginTag origin={origin} />
             <span className="hidden sm:inline">
-              {run.plans.length} plans, {run.effective?.samples ?? "?"} futures sampled, {seconds(run.latency_ms)}
+              {plural(run.plans.length, "plan")}, {run.effective?.samples != null ? plural(run.effective.samples, "future") : "? futures"} sampled, {seconds(run.latency_ms)}
             </span>
             {run.effective?.deterministic && (
               <Define short={GLOSSARY.deterministic.short}>
@@ -188,6 +192,28 @@ export function PlansSection({
 
         {run && !recommend.isPending && (
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+            {exhausted && (
+              <div className="rounded-panel border border-amber/50 bg-amber-soft p-4 text-[13.5px]">
+                <h3 className="text-[15px] font-medium text-ivory">No action could be evaluated in the search budget{budgetMs ? ` of ${seconds(budgetMs)}` : ""}.</h3>
+                <p className="mt-1.5 text-ivory-2">
+                  The engine spent the whole budget preparing candidates for {plural(s.at_risk, "at-risk flight")} and stopped before simulating a single one. The only plan it scored is doing nothing, so there is nothing to recommend yet.
+                </p>
+                <ul className="mt-2 list-disc space-y-0.5 pl-5 text-[12.5px] text-ivory-3">
+                  {run.notes.filter((n) => /budget|uncertainty/.test(n)).map((n, i) => (
+                    <li key={i}>{n}</li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Button variant="primary" size="sm" onClick={() => recommend.mutate()} disabled={demo || state !== "online"}>
+                    Run again
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="/parameters?tab=search">Raise the search budget</a>
+                  </Button>
+                  <span className="text-[12px] text-ivory-3">A day this size needs a budget of 30–60 s.</span>
+                </div>
+              </div>
+            )}
             {run.plans.slice(0, 1).map((p) => (
               <PlanCard
                 key={p.rank}
@@ -196,7 +222,7 @@ export function PlansSection({
                 flights={flights}
                 airportNames={airportNames}
                 diff={shownRank === p.rank ? diff : null}
-                recommended
+                recommended={!exhausted}
                 status={status(p)}
                 shownOnBoard={shownRank === p.rank}
                 onShow={() => onShownRank(p.rank)}
@@ -226,7 +252,11 @@ export function PlansSection({
                   disabledReason={disabledReason}
                 />
               ))}
-              {run.plans.length === 1 && <p className="text-[12.5px] text-ivory-3">No alternative met the hard rules.</p>}
+              {run.plans.length === 1 && !exhausted && (
+                <p className="text-[12.5px] text-ivory-3">
+                  {(run.excluded?.length ?? 0) > 0 ? `No alternative met the hard rules (${plural(run.excluded?.length ?? 0, "candidate")} ruled out).` : "Every alternative had the same outcome as doing nothing."}
+                </p>
+              )}
             </div>
           </div>
         )}

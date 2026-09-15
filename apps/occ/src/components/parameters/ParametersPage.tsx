@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, needsWriteKey, type ConfigEnvelope, type ConstraintDef, type ObjectiveTerm, type ParameterDef, type SearchSettings } from "@/lib/api";
@@ -59,6 +60,7 @@ export function ParametersPage() {
   const qc = useQueryClient();
   const { demo, health } = useEngine();
   const cfg = useQuery({ queryKey: keys.config, queryFn: () => api.config(), staleTime: 5 * 60_000 });
+  const initialTab = useSearchParams().get("tab");
   const presets = useQuery({ queryKey: ["presets"], queryFn: () => api.presets(), staleTime: 60_000 });
   const env: ConfigEnvelope | null = cfg.data?.data ?? null;
   const [search, setSearch] = useState<SearchSettings | null>(null);
@@ -148,7 +150,7 @@ export function ParametersPage() {
       </Panel>
 
       <Panel title="Engine configuration" aside={<Pill tone="amber">experimental: changes what the benchmark means</Pill>} bodyClassName="p-0">
-        <Tabs defaultValue="terms">
+        <Tabs defaultValue={initialTab && ["terms", "rules", "search", "params"].includes(initialTab) ? initialTab : "terms"}>
           <TabList className="px-3.5">
             <Tab value="terms">What the engine minimises</Tab>
             <Tab value="rules">Hard rules</Tab>
@@ -171,7 +173,7 @@ export function ParametersPage() {
                         <div>
                           <div className="text-ivory">{t.name.replace(/_/g, " ")}</div>
                           <div className="text-[12px] text-ivory-3">{t.description}</div>
-                          {t.expression !== t.name && <div className="mono text-[11px] text-ivory-3">{t.expression}</div>}
+                          {t.expression !== t.name && <div className="text-[11px] text-ivory-3">computed as <span className="mono">{t.expression}</span></div>}
                         </div>
                         <Input type="number" step="any" value={String(t.weight)} onChange={(e) => setTerms(terms.map((x, j) => (j === i ? { ...x, weight: Number(e.target.value) } : x)))} disabled={!!blocked} aria-label={`${t.name} weight`} className="h-7 text-right" />
                         <Switch checked={t.enabled} onChange={(v) => setTerms(terms.map((x, j) => (j === i ? { ...x, enabled: v } : x)))} className={cn(blocked && "pointer-events-none opacity-50")} />

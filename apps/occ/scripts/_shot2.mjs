@@ -1,0 +1,11 @@
+import { chromium } from "@playwright/test";
+const [url, out, sel] = process.argv.slice(2);
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.5, reducedMotion: "reduce" });
+await page.goto(url, { waitUntil: "networkidle", timeout: 180000 });
+await page.waitForTimeout(2500);
+const el = page.locator(sel).first();
+await el.scrollIntoViewIfNeeded();
+await el.screenshot({ path: out });
+console.log("wrote", out);
+await browser.close();

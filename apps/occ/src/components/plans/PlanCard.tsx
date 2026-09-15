@@ -11,7 +11,7 @@ import { Pill } from "@/components/ui/pill";
 import { Define } from "@/components/ui/overlay";
 import { CausalChain } from "./CausalChain";
 import { Expanded } from "./Expanded";
-import { PreventsLine, Reliability, ResultTable, actionSentence } from "./shared";
+import { PreventsLine, Reliability, ResultTable, ScoreDefine, actionSentence } from "./shared";
 
 export type PlanStatus = { kind: "recommended" } | { kind: "accepted"; at: number } | { kind: "overridden"; reason: string };
 
@@ -98,6 +98,7 @@ export function PlanCard({
               <div>
                 <h4 className="mb-1 text-[11.5px] text-ivory-3">Reliability</h4>
                 <Reliability plan={plan} />
+                <p className="mt-1.5 text-[11.5px] text-ivory-3">Ranked by <ScoreDefine plan={plan} run={run} />.</p>
               </div>
             </section>
             <div className="flex flex-wrap items-center gap-2">
